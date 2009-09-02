@@ -104,6 +104,8 @@ struct MANGOS_DLL_DECL boss_anetheronAI : public ScriptedAI
     {
         DoPlaySoundToSet(m_creature, SAY_AGGRO);
 
+		m_creature->SetInCombatWithZone();
+
 		if (pInstance)
 		{
             pInstance->SetData(TYPE_ANETHERON, IN_PROGRESS);

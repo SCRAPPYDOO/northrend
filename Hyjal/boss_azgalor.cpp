@@ -86,6 +86,8 @@ struct MANGOS_DLL_DECL boss_azgalorAI : public ScriptedAI
     {
         DoPlaySoundToSet(m_creature, SAY_INTRO);
 
+		m_creature->SetInCombatWithZone();
+
 		if (pInstance)
 		{
             pInstance->SetData(TYPE_AZGALOR, IN_PROGRESS);

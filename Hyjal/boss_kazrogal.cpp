@@ -86,6 +86,7 @@ struct MANGOS_DLL_DECL boss_kazrogalAI : public ScriptedAI
         if(m_pInstance)
             m_pInstance->SetData(TYPE_KAZROGAL, IN_PROGRESS);
         DoPlaySoundToSet(m_creature, SOUND_ONAGGRO);
+		m_creature->SetInCombatWithZone();
     }
 
     void KilledUnit(Unit *victim)
