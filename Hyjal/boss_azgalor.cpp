@@ -79,7 +79,6 @@ struct MANGOS_DLL_DECL boss_azgalorAI : public ScriptedAI
 		HowlTimer = 10000+rand()%5000;
 		DoomTimer = 45000+rand()%5000;
 		EnrageTimer = 600000;
-		EnrageTimer = 10*60*1000;
 	}
 
 	void Aggro(Unit *who)
@@ -112,7 +111,7 @@ struct MANGOS_DLL_DECL boss_azgalorAI : public ScriptedAI
 		if (pInstance)
 		{
 			//Terminate event if needed
-			if (pInstance->GetData(EVENT_TERMINATOR > 3))
+			if (pInstance->GetData(EVENT_TERMINATOR > 4))
 			{
 				pInstance->SetData(TYPE_AZGALOR, DONE); 
 				error_log("Debug: Azgalor - event DONE");											// usunac jesli wszystko bedzie OK
