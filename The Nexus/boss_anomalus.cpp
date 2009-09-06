@@ -304,23 +304,6 @@ struct MANGOS_DLL_DECL mob_chaotic_riftAI : public Scripted_NoMovementAI
             else
                 SUMMON_CRAZED_MANA_WRAITH_Timer = 10000;
         }else SUMMON_CRAZED_MANA_WRAITH_Timer -=diff;
-/////////////////////////////////////////
-/*
-        if (SPELL_CHAOTIC_ENERGY_BURST_Timer < diff)
-        {	
-			if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-				DoCast(target, m_bIsHeroicMode ? SPELL_CHARGED_CHAOTIC_ENERGY_BURST : SPELL_CHAOTIC_ENERGY_BURST);
-			SPELL_CHAOTIC_ENERGY_BURST_Timer = 1000;	
-        }else SPELL_CHAOTIC_ENERGY_BURST_Timer -=diff;
-
-        if (SUMMON_CRAZED_MANA_WRAITH_Timer < diff)
-        {
-            Creature* Wraith = m_creature->SummonCreature(MOB_CRAZED_MANA_WRAITH, m_creature->GetPositionX()+1, m_creature->GetPositionY()+1, m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000);
-            if (Wraith)
-                if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                    Wraith->AI()->AttackStart(target);
-				SUMMON_CRAZED_MANA_WRAITH_Timer = 10000;
-        }else SUMMON_CRAZED_MANA_WRAITH_Timer -=diff; */
     }
 	
 };
