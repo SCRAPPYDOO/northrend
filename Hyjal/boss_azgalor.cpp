@@ -110,12 +110,8 @@ struct MANGOS_DLL_DECL boss_azgalorAI : public ScriptedAI
 
 		if (pInstance)
 		{
-			//Terminate event if needed
-			if (pInstance->GetData(EVENT_TERMINATOR > 4))
-			{
 				pInstance->SetData(TYPE_AZGALOR, DONE); 
 				error_log("Debug: Azgalor - event DONE");											// usunac jesli wszystko bedzie OK
-			}
 		}
     }
 

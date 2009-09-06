@@ -129,12 +129,8 @@ struct MANGOS_DLL_DECL boss_anetheronAI : public ScriptedAI
 
 		if (pInstance)
 		{
-			//Terminate event if needed
-			if (pInstance->GetData(EVENT_TERMINATOR > 2))
-			{
 				pInstance->SetData(TYPE_ANETHERON, DONE); 
 				error_log("Debug: Anetheron - event DONE");											// usunac jesli wszystko bedzie OK
-			}
 		}
     }
 
