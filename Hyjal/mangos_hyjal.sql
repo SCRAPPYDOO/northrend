@@ -23,5 +23,13 @@ UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` =
 -- doomfire targeting
 UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` ='mob_doomfire_targetting' WHERE `entry` = '18104';
 -- ancient wisp
-UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` ='' WHERE `entry` = '17946';
+UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` ='mob_ancient_wisp' WHERE `entry` = '17946';
+
+
+
+
+
+
+
+
 
