@@ -25,6 +25,8 @@ UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` =
 -- ancient wisp
 UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` ='mob_ancient_wisp' WHERE `entry` = '17946';
 
+-- Tyrande npcflag
+UPDATE `creature_template` SET `npcflag` = npcflag | 1 WHERE `entry` = '17948';
 
 
 
