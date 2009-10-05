@@ -76,9 +76,9 @@ enum
 		CREATURE_CHANNEL_TARGET        = 22418,
 };
 
-#define		NORDRASSIL_X       5503.713
-#define		NORDRASSIL_Y      -3523.436
-#define		NORDRASSIL_Z       1608.781
+#define NORDRASSIL_X        5503.713
+#define NORDRASSIL_Y       -3523.436
+#define NORDRASSIL_Z        1608.781
 
 struct mob_ancient_wispAI : public ScriptedAI
 {
@@ -144,21 +144,20 @@ struct MANGOS_DLL_DECL mob_doomfireAI : public Scripted_NoMovementAI
 	{
 		if(FireTimer < diff)
 		{
-			if(Unit* Archimonde = Unit::GetUnit((*m_creature), ArchimondeGUID))
-            {
-			    std::list<HostilReference *> t_list = Archimonde->getThreatManager().getThreatList();
-			    for(std::list<HostilReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
-			    {
-				    if(Unit *target = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid()))
-					    if(target && target->GetTypeId() == TYPEID_PLAYER)
-					    {
-						    if(m_creature->IsWithinDistInMap(target, 3))
-							    target->CastSpell(target, SPELL_DOOMFIRE_DEV, true);
-						    else if(target->HasAura(SPELL_DOOMFIRE_DEV))
-							    target->RemoveAurasDueToSpell(SPELL_DOOMFIRE_DEV);
-					    }
-			    }
-            }
+			Unit* Archimonde = Unit::GetUnit((*m_creature), ArchimondeGUID);
+
+			std::list<HostilReference *> t_list = Archimonde->getThreatManager().getThreatList();
+			for(std::list<HostilReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
+			{
+				if(Unit *target = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid()))
+					if(target && target->GetTypeId() == TYPEID_PLAYER)
+					{
+						if(m_creature->IsWithinDistInMap(target, 3))
+							target->CastSpell(target, SPELL_DOOMFIRE_DEV, true);
+						else if(target->HasAura(SPELL_DOOMFIRE_DEV))
+							target->RemoveAurasDueToSpell(SPELL_DOOMFIRE_DEV);
+					}
+			}
 			FireTimer = 3000;
 		}FireTimer -= diff;
 	}
@@ -202,7 +201,7 @@ struct MANGOS_DLL_DECL mob_doomfire_targettingAI : public ScriptedAI
         {
             m_creature->SummonCreature(CREATURE_DOOMFIRE, 
                 m_creature->GetPositionX(),m_creature->GetPositionY(),m_creature->GetPositionZ(),0,
-                TEMPSUMMON_TIMED_DESPAWN, 10000);
+                TEMPSUMMON_TIMED_DESPAWN, 20000);
             m_uiDoomFireTimer = 1000;
         }m_uiDoomFireTimer -= diff;
 
@@ -214,7 +213,7 @@ struct MANGOS_DLL_DECL mob_doomfire_targettingAI : public ScriptedAI
                 TargetGUID = 0;
             }
             else
-            { 
+            {
                 float x,y,z = 0.0;
                 m_creature->GetRandomPoint(m_creature->GetPositionX()+rand()%30, m_creature->GetPositionY()+rand()%30, m_creature->GetPositionZ(), 40, x, y, z);  
                 m_creature->GetMotionMaster()->MovePoint(0, x, y, z);
@@ -258,7 +257,7 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
     uint32 SummonWispTimer;
     uint32 EnrageTimer;
     uint32 CheckDistanceTimer;
- 
+
     bool Enraged;
     bool BelowTenPercent;
     bool HasProtected;
@@ -278,9 +277,9 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
         DrainNordrassilTimer = 0;
         FearTimer = 42000;
         AirBurstTimer = 30000;
-        GripOfTheLegionTimer = 5000 + rand()%20000;
+        GripOfTheLegionTimer = urand(5000, 25000);
         DoomfireTimer = 20000;
-        SoulChargeTimer = 2000 + rand()%27000;
+        SoulChargeTimer = urand(2000, 29000);
         SoulChargeCount = 0;
         SoulChargeType = 0;
         MeleeRangeCheckTimer = 15000;
@@ -307,7 +306,7 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
 
     void KilledUnit(Unit *victim)
     {
-        switch(rand()%2)
+        switch(urand(0, 2))
         {
             case 0: DoScriptText(SAY_SLAY1, m_creature); break;
             case 1: DoScriptText(SAY_SLAY2, m_creature); break;
@@ -339,7 +338,7 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
                 break;
         }
 
-        SoulChargeTimer = 2000 + rand()%28000;
+        SoulChargeTimer = urand(2000, 30000);
         ++SoulChargeCount;
     }
 
@@ -397,7 +396,7 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
             pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
             pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         }
-    }
+        }
 
     void UnleashSoulCharge()
     {
@@ -406,8 +405,9 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
         if(m_creature->getVictim())
             DoCast(m_creature->getVictim(), SoulChargeType);
 
-        --SoulChargeCount;
-        SoulChargeTimer = 2000 + rand()%28000;
+
+            --SoulChargeCount;
+            SoulChargeTimer = urand(2000, 30000);
     }
 
     void UpdateAI(const uint32 diff)
@@ -425,10 +425,10 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
                 }
                 */
             if(m_pInstance->GetData(TYPE_AZGALOR) == DONE)
-            {
-                m_creature->setFaction(1720);
-                m_creature->SetVisibility(VISIBILITY_ON);
-            }
+                {
+                    m_creature->setFaction(1720);
+                    m_creature->SetVisibility(VISIBILITY_ON);
+                }
             //}
 
             if (DrainNordrassilTimer < diff)
@@ -505,11 +505,11 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
 
                 //all members of raid must get this buff
                 if(m_creature->getVictim())
-                    DoCast(m_creature->getVictim(), SPELL_PROTECTION_OF_ELUNE);
+                DoCast(m_creature->getVictim(), SPELL_PROTECTION_OF_ELUNE);
 
-                SummonWispTimer = 1000;
+                SummonWispTimer = 5000;
                 HasProtected = true;
-                Enraged = true;
+                //Enraged = true;
             }
 
             if (SummonWispTimer < diff)
@@ -524,11 +524,20 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
             if (HandOfDeathTimer < diff)
             {
                 if(m_creature->getVictim())
-                    DoCast(m_creature->getVictim(), SPELL_HAND_OF_DEATH);
+                DoCast(m_creature->getVictim(), SPELL_HAND_OF_DEATH);
                 HandOfDeathTimer = 2000;
             }else HandOfDeathTimer -= diff;
             return;                                         // Don't do anything after this point.
         }
+
+        if (HasProtected)
+            if (Unit* victim = m_creature->getVictim())
+            {
+                if (!victim->HasAura(SPELL_PROTECTION_OF_ELUNE))
+                    m_creature->CastSpell(m_creature->getVictim(), SPELL_PROTECTION_OF_ELUNE, false);
+                else
+                    return;
+            }
 
         if (SoulChargeCount > 0)
         {
@@ -541,41 +550,41 @@ struct MANGOS_DLL_DECL boss_archimondeAI : public ScriptedAI
         {
 			if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
 				DoCast(target, SPELL_GRIP_OF_THE_LEGION);
-            GripOfTheLegionTimer = 5000 + rand()%20000;
+            GripOfTheLegionTimer = urand(5000, 25000);
         }else GripOfTheLegionTimer -= diff;
 
         if (AirBurstTimer < diff)
         {
-            if (rand()%2 == 0)
+            if (!urand(0, 1))
                 DoScriptText(SAY_AIR_BURST1, m_creature);
             else
                 DoScriptText(SAY_AIR_BURST2, m_creature);
 
 			if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 1))
 				DoCast(target, SPELL_AIR_BURST);
-            AirBurstTimer = 25000 + rand()%15000;
+            AirBurstTimer = urand(25000, 40000);
         }else AirBurstTimer -= diff;
 
         if (FearTimer < diff)
         {
 			if(m_creature->getVictim())
-				DoCast(m_creature->getVictim(), SPELL_FEAR);
+            DoCast(m_creature->getVictim(), SPELL_FEAR);
             FearTimer = 42000;
         }else FearTimer -= diff;
 
         if (DoomfireTimer < diff)
         {
-            switch (rand()%2)
+            switch (urand(0, 1))
             {
                 case 0:
-                    DoScriptText(SAY_DOOMFIRE1, m_creature);
+                DoScriptText(SAY_DOOMFIRE1, m_creature);
                     m_creature->SummonCreature(CREATURE_DOOMFIRE_SPIRIT,
                     m_creature->GetPositionX()+6.0,m_creature->GetPositionY()+6.0,m_creature->GetPositionZ(),0,
                     TEMPSUMMON_TIMED_DESPAWN, 27000);
                     break;
 
                 case 1:
-                    DoScriptText(SAY_DOOMFIRE2, m_creature);
+                DoScriptText(SAY_DOOMFIRE2, m_creature);
                     m_creature->SummonCreature(CREATURE_DOOMFIRE_SPIRIT,
                     m_creature->GetPositionX()-6.0,m_creature->GetPositionY()-6.0,m_creature->GetPositionZ(),0,
                     TEMPSUMMON_TIMED_DESPAWN, 27000);
