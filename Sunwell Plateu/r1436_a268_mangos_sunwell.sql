@@ -16,6 +16,7 @@ UPDATE creature_template SET `ScriptName` = 'mob_felmyst_trail' WHERE `entry` IN
 
 UPDATE creature_template SET `ScriptName` = 'mob_deathcloud' WHERE `entry` IN (25703); 
 
+-- --------------------------------------------------------
 -- Muru Event
 -- Muru and Entropius
 UPDATE `creature_template` SET `lootid` = '25840', `mingold` = '2250000', `maxgold` = '2750000', `minhealth` = '5200000', `maxhealth` = '5200000', `mechanic_immune_mask` = '1073463287', `ScriptName` = 'boss_muru' WHERE `entry` IN (25741);
@@ -29,3 +30,10 @@ UPDATE `creature_template` SET `minmana` = '10000', `maxmana` = '10000' WHERE `e
 
 -- Singularity
 UPDATE creature_template SET `faction_A` = '14', `faction_H` = '14', `speed` = '1', `rank` = '1', `AIName` = '', `ScriptName` = 'mob_singularity' WHERE `entry` IN (25855); 
+
+-- --------------------------------------------------------
+
+-- Kiljaeden
+UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `ScriptName` = 'boss_kiljaden' WHERE `entry` IN (25315); 
+UPDATE `creature_template` SET `mechanic_immune_mask` = '0', `AIName` = '', `ScriptName` = 'mob_deceiver' WHERE `entry` IN (25588); 
+UPDATE `creature_template` SET `mechanic_immune_mask` = '0', `minlevel` = '70', `maxlevel` = '70', `minhealth` = '78246', `maxhealth` = '78246', `minmana` = '78875', `maxmana` = '78875', `armor` = '2000', `faction_A` = '14', `faction_H` = '14', `mindmg` = '600', `maxdmg` = '1200', `attackpower` = '450', `AIName` = '', `ScriptName` = 'mob_sinister' WHERE `entry` IN (25708); 
