@@ -209,6 +209,9 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
 
         if (m_creature->HasAura(SPELL_BANISH))
         {
+            if (pInstance && pInstance->GetData(DATA_SATHROVARR_EVENT) == DONE)
+                m_creature->RemoveAurasDueToSpell(SPELL_BANISH);
+
             if (pInstance && pInstance->GetData(DATA_KALECGOS_EVENT) == NOT_STARTED)
             {
                 m_creature->RemoveAurasDueToSpell(SPELL_BANISH);
@@ -435,7 +438,9 @@ struct MANGOS_DLL_DECL boss_sathrovarrAI : public ScriptedAI
 
     void JustDied(Unit *killer)
     {
-        DoScriptText(SAY_SATH_DEATH, m_creature);   
+        DoScriptText(SAY_SATH_DEATH, m_creature); 
+        if(pInstance)
+            pInstance->SetData(DATA_SATHROVARR_EVENT,DONE);
     }
 
     void TeleportAllPlayersBack()
