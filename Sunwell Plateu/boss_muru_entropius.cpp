@@ -27,11 +27,12 @@ set data z wybuchem czaszki zeby reszta nie wybuchala  i speed  na 0,8
 */
 
 #include "precompiled.h"
-#include "def_sunwell_plateau.h"
+#include "sunwell_plateau.h"
  
 enum spells // Boss spells
 {
     ENRAGE                      = 26662,
+    SPELL_NEGATIVE              = 46285,
     SPELL_NEGATIVEENERGY        = 46008,
     SPELL_NEGATIVEENERGY_CHAIN  = 46289,
 
@@ -45,8 +46,9 @@ enum spells // Boss spells
     DARK_FIEND_AURA             = 45934, // latajaca czaszka :D
     DARK_FIEND_DEBUFF           = 45944,
     SPELL_DISPELL               = 32375,
+    SPELL_PURGE                 = 8012,
 
-    SPELL_ARCANEFORM            = 48019, //Chaotic Rift visual
+    SPELL_ARCANEFORM            = 48019, // Chaotic Rift visual
 
     VOID_AURA                   = 46087,
     VOID_BLAST                  = 46161,
@@ -107,6 +109,9 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
     uint32 SummonVoidTimer;
     uint32 DarknessTimer;
     uint32 EnrageTimer;
+    uint32 DarkFiendTimer;
+
+    bool Darkness;
     
     void Reset()
     {
@@ -118,6 +123,7 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
         DarknessTimer = 45000;
         EnrageTimer = 600000;
         Phase1 = true;
+        Darkness = false;
 
         m_creature->SetVisibility(VISIBILITY_ON);
    
@@ -138,7 +144,7 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
     
     void UpdateAI(const uint32 diff)
     {       
-        if (!m_creature->SelectHostilTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
                 return;
         
         if(EnrageTimer < diff)
@@ -160,17 +166,17 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
                 DoPlaySoundToSet(m_creature, SOUND_CHANGE_PHASE);
                 DoCast(m_creature, ENTROPIUS_EFFECT, true);
 
-                TargetsCount = 2;
+                TargetsCount = 1;
                 TargetsCountTimer = 10000;
                 SingularityTimer = 50000;
                 Phase1 = false;
             }
             if(NegativeEnergyTimer < diff)
             {
-                for(uint8 i=0; i<5; ++i)
+                for(uint8 i=0; i<2; ++i)
                 {
                     if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        m_creature->CastSpell(target, SPELL_NEGATIVEENERGY, false);
+                        m_creature->CastSpell(target, SPELL_NEGATIVE, false);
                 }
                 NegativeEnergyTimer = 1000;
             }else NegativeEnergyTimer -= diff;
@@ -221,10 +227,10 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
             //Utrudnienie -> chain negative energy nie dziala wiec sa 3 beamy full dmg
             if(NegativeEnergyTimer < diff)
             {
-                for(uint8 i=0; i<TargetsCount*3; ++i)
+                for(uint8 i=0; i<TargetsCount; ++i)
                 {
                     if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        m_creature->CastSpell(target, SPELL_NEGATIVEENERGY, false);
+                        m_creature->CastSpell(target, SPELL_NEGATIVE, false);
                 }
 
                 NegativeEnergyTimer = 1000;
@@ -252,10 +258,17 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
             // Creature* Darkness = m_creature->SummonCreature(25879, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
             m_creature->CastSpell(m_creature, DARKNESS, true);
 
+            Darkness = true;
+            DarkFiendTimer = 3000;
+            DarknessTimer = 45000;
+        }else DarknessTimer -= diff;
+
+        if(DarkFiendTimer < diff && Darkness)
+        {
             // Phase2 1 dark fiend : Phase1 8 dark fiend
-            uint8 i=8;
-            //if(Phase1)
-                //i=8;
+            uint8 i=1;
+            if(Phase1)
+                i=8;
             for(uint8 j=0; j<i; ++j)
             {
                 //Using Instance Data to stop exploding after first explode
@@ -266,8 +279,9 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
                     if(sTrash)
                         sTrash->AI()->AttackStart(sTarget);
             }
-            DarknessTimer = 45000;
-        }else DarknessTimer -= diff;
+            Darkness = false;
+            DarkFiendTimer = 45000;
+        }else DarkFiendTimer -= diff;
     }
 };
  
@@ -300,14 +314,18 @@ struct MANGOS_DLL_DECL dark_fiendAI : public ScriptedAI
     void SpellHit(Unit *caster, const SpellEntry *spell)
     {
         if (Reached == false)
+        {
             if (spell->Id == SPELL_DISPELL)
                 Reached  = true;
+            if (spell->Id == SPELL_PURGE)
+                Reached  = true;
+        }
     }
 
     void UpdateAI(const uint32 diff)
     {
         //Return since we have no target
-        if (!m_creature->SelectHostilTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
                 return;
         
         if( m_creature->isAttackReady() && !m_creature->IsNonMeleeSpellCasted(false))
@@ -363,7 +381,7 @@ struct MANGOS_DLL_DECL mob_voidsentinelAI : public ScriptedAI
     void UpdateAI(const uint32 diff)
     {
         //Return since we have no target
-        if (!m_creature->SelectHostilTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
                 return;
         
         if(AuraTimer < diff)
@@ -402,7 +420,7 @@ struct MANGOS_DLL_DECL mob_singularityAI : public ScriptedAI
       
     void UpdateAI(const uint32 diff)
     {
-        if (!m_creature->SelectHostilTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
                 return;
 
         if(ChangeTargetTimer < diff)
