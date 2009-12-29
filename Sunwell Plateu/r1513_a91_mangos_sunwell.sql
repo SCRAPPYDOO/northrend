@@ -42,10 +42,10 @@ UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` =
 UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `minhealth` = '100', `maxhealth` = '100',`ScriptName` = 'mob_killimp', `minlevel` = '70', `maxlevel` = '70' WHERE `entry` IN (25598); 
 
 -- Blue Dragon
-UPDATE `creature_template` SET `minhealth` = '500000', `maxhealth` = '500000',`ScriptName` = 'dragon', `minlevel` = '71', `maxlevel` = '71' WHERE `entry` IN (25653); 
+UPDATE `creature_template` SET `unit_flags` = '6',`npcflag` = '1', `minhealth` = '50000', `maxhealth` = '50000',`ScriptName` = 'dragon', `minlevel` = '71', `maxlevel` = '71', `RegenHealth` = '0' WHERE `entry` IN (25653); 
 
 -- Shadow Spike
-UPDATE `creature_template` SET `minhealth` = '1', `maxhealth` = '1', `faction_A` = '14', `faction_H` = '14', `ScriptName` = 'mob_shadow_spike', `minlevel` = '71', `maxlevel` = '71' WHERE `entry` IN (30598); 
+UPDATE `creature_template` SET `minhealth` = '1', `maxhealth` = '1', `faction_A` = '14', `faction_H` = '14', `ScriptName` = 'mob_shadowspike', `minlevel` = '71', `maxlevel` = '71' WHERE `entry` IN (30598); 
 
 -- Dragon Orb
 UPDATE gameobject_template SET `type` = '22', `data0` = '0', `data3` = '1', `data6` = '0', `data10` = '0', `ScriptName` = 'go_orb_of_the_blue_flight' WHERE `entry` IN (188415);
