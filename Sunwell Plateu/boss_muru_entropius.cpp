@@ -16,15 +16,10 @@
  
 /* ScriptData
 SDName: boss_muru_entropius
-SD%Complete: 90
-SDComment: ;D
+SD%Complete: 99
+SDComment:
+SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
- 
-/* todo
-entropius musi chodzic  mele atak zrobiony
-ruch bosa 
-set data z wybuchem czaszki zeby reszta nie wybuchala  i speed  na 0,8
-*/
 
 #include "precompiled.h"
 #include "sunwell_plateau.h"
@@ -89,7 +84,6 @@ float ShadowPortalSpawn[5][3] =
 };
  
 /* --- M'uru AI --- */
-    
 struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
 {
     boss_muruAI(Creature *c) : ScriptedAI(c) 
@@ -100,6 +94,9 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
 
     ScriptedInstance* pInstance; 
     bool Phase1;
+
+    float m_fDarkPosX;
+    float m_fDarkPosY;
 
     uint32 TargetsCount;
     uint32 TargetsCountTimer;
@@ -115,6 +112,9 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
     
     void Reset()
     {
+        m_fDarkPosX = 0;
+        m_fDarkPosY = 0;
+
         m_creature->SetDisplayId(23404);
 
         NegativeEnergyTimer = 1000;
@@ -255,6 +255,8 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
         //Cast Darkness
         if(DarknessTimer < diff)
         {
+            m_fDarkPosX = m_creature->GetPositionX();
+            m_fDarkPosY = m_creature->GetPositionY();
             // Creature* Darkness = m_creature->SummonCreature(25879, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
             m_creature->CastSpell(m_creature, DARKNESS, true);
 
@@ -274,7 +276,7 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
                 //Using Instance Data to stop exploding after first explode
                 if(pInstance)
                     pInstance->SetData(DATA_MURU_EVENT, NOT_STARTED);
-                Creature* sTrash = m_creature->SummonCreature(ID_DARK_FIEND, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 60000);
+                Creature* sTrash = m_creature->SummonCreature(ID_DARK_FIEND, m_fDarkPosX, m_fDarkPosY, m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 60000);
                 if(Unit* sTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
                     if(sTrash)
                         sTrash->AI()->AttackStart(sTarget);

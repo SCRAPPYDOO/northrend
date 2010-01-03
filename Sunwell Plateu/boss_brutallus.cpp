@@ -21,21 +21,32 @@ SDComment: Intro not made. Script for Madrigosa to be added here.
 EndScriptData */
 
 #include "precompiled.h"
-#include "def_sunwell_plateau.h"
+#include "sunwell_plateau.h"
 
 enum Brutallus
 {
+    SOUND_INTRO                     = 12458,
+    SOUND_INTRO_BREAK_ICE           = 12459,
+    SOUND_INTRO_CHARGE              = 12460,
+    SOUND_INTRO_KILL_MADRIGOSA      = 12461,
+    SOUND_INTRO_TAUNT               = 12462,
+    SOUND_MADR_ICE_BARRIER          = 12472,
+    SOUND_MADR_INTRO                = 12473,
+    SOUND_MADR_ICE_BLOCK            = 12474,
+    SOUND_MADR_TRAP                 = 12475,
+    SOUND_MADR_DEATH                = 12476,
+
     YELL_INTRO                      = -1580017,
     YELL_INTRO_BREAK_ICE            = -1580018,
-    YELL_INTRO_CHARGE               = -1580019,
+    YELL_INTRO_CHARGE               = -1580019, 
     YELL_INTRO_KILL_MADRIGOSA       = -1580020,
     YELL_INTRO_TAUNT                = -1580021,
-    YELL_MADR_ICE_BARRIER           = -1580031,
+    YELL_MADR_ICE_BARRIER           = -1580031, 
     YELL_MADR_INTRO                 = -1580032,
-    YELL_MADR_ICE_BLOCK             = -1580033,
-    YELL_MADR_TRAP                  = -1580034,
+    YELL_MADR_ICE_BLOCK             = -1580033, 
+    YELL_MADR_TRAP                  = -1580034, 
     YELL_MADR_DEATH                 = -1580035,
-    YELL_AGGRO                      = -1580022,
+    YELL_AGGRO                      = -1580022, 
     YELL_KILL1                      = -1580023,
     YELL_KILL2                      = -1580024,
     YELL_KILL3                      = -1580025,
@@ -49,7 +60,13 @@ enum Brutallus
     SPELL_BURN                      = 45141,
     SPELL_BURN_AURA                 = 46394,
     SPELL_STOMP                     = 45185,
-    SPELL_BERSERK                   = 26662
+    SPELL_BERSERK                   = 26662,
+
+    //Madrigosa
+    SPELL_ICE_BARRIER               = 45203,
+    SPELL_FROZEN_PRISON             = 47854,
+
+    CREATURE_MADRIGOSA              = 25160,
 };
 
 struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
@@ -68,6 +85,9 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
     uint32 m_uiBerserkTimer;
     uint32 m_uiLoveTimer;
     uint32 m_uiBurnCheckTimer;
+    uint32 m_uiIntroCount;
+    uint32 m_uiIntroTimer;
+    bool m_bIsIntroNow;
 
     void Reset()
     {
@@ -77,12 +97,23 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
         m_uiBurnTimer = 60000;
         m_uiBerserkTimer = 360000;
         m_uiLoveTimer = urand(10000, 17000);
+        m_uiIntroTimer = 5000;
+        m_bIsIntroNow = true;
+        m_uiIntroCount = 0;
+
+        if(m_pInstance)
+            m_pInstance->SetData(DATA_BRUTALLUS_EVENT, NOT_STARTED);
+
+        if(!m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+            m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
     }
 
     void Aggro(Unit* pWho)
     {
         DoScriptText(YELL_AGGRO, m_creature);
 	    DoPlaySoundToSet(m_creature, 12463);
+
+        Creature* Madrigosa = m_creature->SummonCreature(CREATURE_MADRIGOSA, 1465.831, 647.065, m_creature->GetPositionZ(), 4.729, TEMPSUMMON_TIMED_DESPAWN, 42000);
     }
 
     void KilledUnit(Unit* pVictim)
@@ -101,26 +132,85 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
 
         if (Creature* Felmist = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(DATA_FELMYST))))
         {
-               Felmist->SetVisibility(VISIBILITY_ON);
-               Felmist->setFaction(14);
-		}
+           Felmist->SetVisibility(VISIBILITY_ON);
+           Felmist->setFaction(14);
+        }
+
+        if (!m_pInstance)
+            return;
+
+        if (GameObject* pFireBarrier = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_FIRE_BARRIER)))
+            pFireBarrier->SetGoState(GO_STATE_ACTIVE);
+
+        m_pInstance->SetData(DATA_BRUTALLUS_EVENT,DONE);
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
-        if (!m_creature->SelectHostilTarget() || !m_creature->getVictim())
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if(m_uiIntroTimer < uiDiff)
+        {
+            if(m_bIsIntroNow)
+            {
+                m_creature->StopMoving();
+                m_creature->GetMotionMaster()->Clear();
+                m_creature->GetMotionMaster()->MoveIdle();
+
+                switch(m_uiIntroCount)
+                {
+                    case 0:
+                        DoPlaySoundToSet(m_creature, SOUND_MADR_ICE_BARRIER);
+                        m_uiIntroTimer = 6000; break;
+                    case 1:
+                        DoPlaySoundToSet(m_creature, SOUND_MADR_INTRO);
+                        m_uiIntroTimer = 5000; break;
+                    case 2:
+                        DoPlaySoundToSet(m_creature, SOUND_INTRO);
+                        m_uiIntroTimer = 6000; break;
+                    case 3:
+                        DoPlaySoundToSet(m_creature, SOUND_MADR_ICE_BLOCK);
+                        m_uiIntroTimer = 4000; break;
+                    case 4:
+                        DoPlaySoundToSet(m_creature, SOUND_INTRO_BREAK_ICE);
+                        m_uiIntroTimer = 5000; break;
+                    case 5:
+                        DoPlaySoundToSet(m_creature, SOUND_MADR_TRAP);
+                        m_uiIntroTimer = 5000; break;
+                    case 6:
+                        DoPlaySoundToSet(m_creature, SOUND_INTRO_CHARGE);
+                        m_uiIntroTimer = 5000; break;
+                    case 7:
+                        DoPlaySoundToSet(m_creature, SOUND_MADR_DEATH);
+                        m_uiIntroTimer = 5000; break;
+                    case 8:
+                        DoPlaySoundToSet(m_creature, SOUND_INTRO_KILL_MADRIGOSA);
+                        m_uiIntroTimer = 6000; break;
+                    case 9:
+                        DoPlaySoundToSet(m_creature, SOUND_INTRO_TAUNT);
+                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                        m_uiBerserkTimer = 360000;
+                        m_bIsIntroNow = false; break;
+                }
+                ++m_uiIntroCount;
+            }
+        }else m_uiIntroTimer -= uiDiff;
+
+        if(m_bIsIntroNow)
             return;
 
         if (m_uiBurnCheckTimer < uiDiff)
         {
-            std::list<HostilReference *> t_list = m_creature->getThreatManager().getThreatList();
-            for(std::list<HostilReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
+            std::list<HostileReference *> t_list = m_creature->getThreatManager().getThreatList();
+            for(std::list<HostileReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
             {
                 Unit *BurnedPlayer = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());
                 if (BurnedPlayer && BurnedPlayer->GetTypeId() == TYPEID_PLAYER && BurnedPlayer->HasAura(SPELL_BURN_AURA))
                 {
-                    std::list<HostilReference *> t_list = m_creature->getThreatManager().getThreatList();
-                    for(std::list<HostilReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
+                    std::list<HostileReference *> t_list = m_creature->getThreatManager().getThreatList();
+                    for(std::list<HostileReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
                     {
                         Unit *TargetedPlayer = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());  
                         if (TargetedPlayer && TargetedPlayer->GetTypeId() == TYPEID_PLAYER && TargetedPlayer->IsWithinDistInMap(BurnedPlayer, 6) && !TargetedPlayer->HasAura(SPELL_BURN_AURA))
@@ -139,7 +229,7 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
                 case 1: DoScriptText(YELL_LOVE2, m_creature); break;
                 case 2: DoScriptText(YELL_LOVE3, m_creature); break;
             }
-             m_uiLoveTimer = urand(15000, 23000);
+            m_uiLoveTimer = urand(15000, 23000);
         }
         else
             m_uiLoveTimer -= uiDiff;
@@ -160,7 +250,7 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
                 if (pTarget->HasAura(SPELL_BURN_AURA,0))
                    pTarget->RemoveAurasDueToSpell(SPELL_BURN_AURA);
             }
-          m_uiStompTimer = 30000;
+            m_uiStompTimer = 30000;
         }
         else
             m_uiStompTimer -= uiDiff;
