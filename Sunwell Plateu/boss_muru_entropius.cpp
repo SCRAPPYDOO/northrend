@@ -132,6 +132,9 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
 
         if(!m_creature->HasAura(AURA_SUNWELL_RADIANCE, 0))
             m_creature->CastSpell(m_creature, AURA_SUNWELL_RADIANCE, true);
+
+        if(pInstance)
+            pInstance->SetData(DATA_MURU_EVENT, NOT_STARTED);
     }
     
     void Aggro(Unit *who) 
@@ -139,8 +142,23 @@ struct MANGOS_DLL_DECL boss_muruAI : public ScriptedAI
         m_creature->StopMoving();
         m_creature->GetMotionMaster()->Clear();
         m_creature->GetMotionMaster()->MoveIdle();
-    }  
+    } 
+
     void KilledUnit(Unit *Victim) {}
+
+    void JustDied(Unit* Killer) 
+    {
+        if(!Killer)
+            return;
+
+        if(pInstance)
+        {
+            pInstance->SetData(DATA_MURU_EVENT, DONE);
+
+            if (GameObject* pForceBarrier = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GATE_4)))
+                pForceBarrier->SetGoState(GO_STATE_ACTIVE);
+        }
+    }
     
     void UpdateAI(const uint32 diff)
     {       
@@ -330,26 +348,19 @@ struct MANGOS_DLL_DECL dark_fiendAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
                 return;
         
-        if( m_creature->isAttackReady() && !m_creature->IsNonMeleeSpellCasted(false))
-        {
-            //If we are within range melee the target
-            /*
-            if (!get data Explosion == Done)
-            */
-            if(!Reached)
-                if(m_creature->IsWithinDistInMap(m_creature->getVictim(), ATTACK_DISTANCE))
-                {
-                    m_creature->SetVisibility(VISIBILITY_OFF);
-                    if(pInstance && pInstance->GetData(DATA_MURU_EVENT) == NOT_STARTED)
-                    {
-                        m_creature->CastSpell(m_creature->getVictim(), DARK_FIEND_DEBUFF, true);
-                        m_creature->AttackerStateUpdate(m_creature->getVictim());
-                        pInstance->SetData(DATA_MURU_EVENT, DONE);
-                        Reached = true;
-                    }
-                    // set data explosion done
-                }
-        }
+        if(!Reached)
+            if(m_creature->IsWithinDistInMap(m_creature->getVictim(), ATTACK_DISTANCE))
+            {
+                m_creature->SetVisibility(VISIBILITY_OFF);
+                if(pInstance && pInstance->GetData(DATA_MURU_EVENT) == NOT_STARTED)
+                    if(Unit* victim = m_creature->getVictim())
+                        if(victim->GetTypeId() == TYPEID_PLAYER)
+                        {
+                            m_creature->CastSpell(victim, DARK_FIEND_DEBUFF, true);
+                            pInstance->SetData(DATA_MURU_EVENT, IN_PROGRESS);
+                            Reached = true;
+                        }
+            }
     }
 };
  

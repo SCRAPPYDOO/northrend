@@ -137,9 +137,11 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
     uint32 m_uiFogOfCorruptionTimer;
     uint32 m_uiLandPhaseTimer;
     uint32 m_uiDemonicVaporInitTimer;
+    uint32 m_uiFogStartTimer;
     uint8  m_uiBreathCount;
     uint8  m_uiFogCount;
- 
+    uint8  m_uiMaxFogCount;
+
     bool m_bIsFogOfCorruption;
  
     void Reset()
@@ -149,10 +151,10 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
         m_uiEnrageTimer         = 600000;
         m_uiFlyPhaseTimer       = 60000;
         m_uiNoxiousFumesTimer   = 1000;
-        m_uiCorrosionTimer      = 72000;
-        m_uiCleaveTimer         = 28000;
-        m_uiEncapsulateTimer    = 10000;
-        m_uiGasNovaTimer        = 30000;
+        m_uiCorrosionTimer      = 29000;
+        m_uiCleaveTimer         = 27000;
+        m_uiEncapsulateTimer    = 18000;
+        m_uiGasNovaTimer        = 25000;
         m_uiEncapsulateCount    = 6;
 
         m_bIsCastedNoxiousFumes = false;
@@ -165,6 +167,7 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
         m_uiBreathCount         = 10;
         m_uiFogCount            = 4;
         m_uiMaxBreathCount      = 2;
+        m_uiMaxFogCount         = 3;
 
         m_fPosX                 = 0;
         m_fPosY                 = 0;
@@ -260,11 +263,10 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
                 m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+20, m_creature->GetOrientation());     
                 //FlyPhase Timers Start
                 m_uiDemonicVaporInitTimer   = 5000;
-                m_uiFogOfCorruptionTimer    = 30000;
                 m_uiLandPhaseTimer          = 120000;
+                m_uiFogStartTimer           = 40000;
+                m_uiMaxFogCount             = 0;
                 m_uiMaxBreathCount      = 0;
-                m_uiFogCount            = 0;
-                m_bIsFogOfCorruption    = true;
                 m_bIsFlyPhase           = true;
 
                 if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
@@ -282,7 +284,7 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
                 DoScriptText(YELL_CORROSION, m_creature);
                 if(m_creature->getVictim())
                     DoCast(m_creature->getVictim(), SPELL_CORROSION);
-                m_uiCorrosionTimer = 72000;
+                m_uiCorrosionTimer = 24000;
             }else m_uiCorrosionTimer -= diff;
  
             //100%
@@ -290,7 +292,6 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
             {
                 DoScriptText(YELL_NOXIOUSFUMES, m_creature);
                 DoPlaySoundToSet(m_creature, 12478);
-
                 DoCast(m_creature, SPELL_NOXIOUSFUMES_AURA);
                 m_bIsCastedNoxiousFumes = true;
             }else m_uiNoxiousFumesTimer -= diff;
@@ -299,7 +300,7 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
             if(m_uiGasNovaTimer < diff)
             {
                 DoCast(m_creature, SPELL_GASNOVA);
-                m_uiGasNovaTimer = 35000;
+                m_uiGasNovaTimer = 25000;
             }else m_uiGasNovaTimer -= diff;
  
             //100%
@@ -310,8 +311,8 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
                     m_uiEncapsulateGUID = target->GetGUID();
                     DoCast(target, SPELL_ENCAPSULATE_CHANNEL);
                 }
-                m_uiEncapsulateTimer = 40000;
-                m_uiEncapsulateAOETimer = 1000;
+                m_uiEncapsulateTimer = 18000;
+                m_uiEncapsulateAOETimer = 3000;
                 m_uiEncapsulateCount = 0;
             }else m_uiEncapsulateTimer -= diff;
  
@@ -329,14 +330,14 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
         }
         else
         {
-            if(m_uiMaxBreathCount > 1)
-                if(m_uiLandPhaseTimer < diff)
-                {
-                    m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-20, m_creature->GetOrientation());
-                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
-                    m_uiFlyPhaseTimer       = 60000;
-                    m_bIsFlyPhase           = false;
-                }else m_uiLandPhaseTimer -= diff;
+            if((m_uiLandPhaseTimer < diff) && (m_uiMaxFogCount > 1))
+            {
+                m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-20, m_creature->GetOrientation());
+                m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                m_uiFlyPhaseTimer       = 60000;
+                m_bIsFlyPhase           = false;
+                return;
+            }else m_uiLandPhaseTimer -= diff;
 
             if(m_uiDemonicVaporInitTimer < diff)
             {
@@ -346,7 +347,7 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
                     {
                         m_uiVictimGUID = target->GetGUID();
                         DoCast(target, SPELL_VAPOR_DAMAGE, true);
-                        for(uint8 i=0; i<2; ++i) // i<10
+                        for(uint8 i=0; i<10; ++i) // i<10
                         {
                             Creature *Undead = m_creature->SummonCreature(MOB_DEAD, target->GetPositionX()+urand(1,20), target->GetPositionY()+urand(1,20), target->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 20000);
                             if(Undead)
@@ -371,21 +372,46 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
                 }
             }else m_uiDemonicVaporTimer -= diff;
             
-            if(m_bIsFogOfCorruption)
+            if((m_uiFogStartTimer < diff) && (m_uiMaxFogCount < 3))
             {
-                if(m_uiFogOfCorruptionTimer < diff)
+                switch(m_uiMaxFogCount)
                 {
-                    switch(m_uiFogCount)
-                    {
-                        case 0: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX+15+urand(1,4), m_fPosY+15, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 15000); break;
-                        case 1: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX-15+urand(1,4), m_fPosY-15, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 15000); break;
-                        case 2: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX+30+urand(1,4), m_fPosY+30, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 15000); break;
-                        case 3: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX-30+urand(1,4), m_fPosY-30, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 15000); m_bIsFogOfCorruption = false; m_uiLandPhaseTimer = 10000; break;
-                    }
-                    ++m_uiFogCount;
-                    m_uiFogOfCorruptionTimer = 2000;
-                }else m_uiFogOfCorruptionTimer -= diff;
-            }
+                    case 0: 
+                        m_fPosX = 1463.829;
+                        m_fPosY = 611.512;
+                        m_fPosZ = 21.57;
+                        break;
+                    case 1:
+                        m_fPosX = 1471.506;
+                        m_fPosY = 591.810;
+                        m_fPosZ = 22.206;
+                        break;
+                    case 2:
+                        m_fPosX = 1502.767;
+                        m_fPosY = 599.811;
+                        m_fPosZ = 26.612; 
+                        m_uiLandPhaseTimer = 25000;
+                        break;
+                }
+                m_bIsFogOfCorruption        = true;
+                m_uiFogOfCorruptionTimer    = 2000;
+                m_uiFogCount                = 0;
+                ++m_uiMaxFogCount;
+                m_uiFogStartTimer = 20000;
+            }else m_uiFogStartTimer -= diff;
+
+            if((m_uiFogOfCorruptionTimer < diff) && m_bIsFogOfCorruption)
+            {
+                switch(m_uiFogCount)
+                {
+                    case 0: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX+30, m_fPosY+30, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 10000); break;
+                    case 1: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX+15, m_fPosY+15, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 10000); break;
+                    case 2: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX-15, m_fPosY-15, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 10000); break;
+                    case 3: m_creature->SummonCreature(MOB_DEATH_CLOUD, m_fPosX-30, m_fPosY-30, m_fPosZ, 0, TEMPSUMMON_TIMED_DESPAWN, 10000); m_bIsFogOfCorruption = false; break;
+                }
+                ++m_uiFogCount;
+                m_uiFogOfCorruptionTimer = 2000;
+            }else m_uiFogOfCorruptionTimer -= diff;
         }
     }
 };
@@ -484,7 +510,7 @@ struct MANGOS_DLL_DECL mob_deathcloudAI : public Scripted_NoMovementAI
             for(std::list<HostileReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
             {
                 if(Unit *target = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid()))
-                    if(target && target->GetTypeId() == TYPEID_PLAYER && target->IsWithinDistInMap(m_creature, 15))
+                    if(target && target->GetTypeId() == TYPEID_PLAYER && target->IsWithinDistInMap(m_creature, 20))
                     {
                         //Kill Player
                         SummonImageOf(target);

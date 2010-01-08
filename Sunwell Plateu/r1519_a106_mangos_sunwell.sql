@@ -8,6 +8,9 @@ UPDATE creature_template SET `mechanic_immune_mask` = '1073463287', `ScriptName`
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287', `ScriptName` = 'boss_kalec' WHERE `entry` IN (24891);
 -- Kalecgos SAthrovarr Pre WOTLK HP
 UPDATE creature_template SET `minhealth` = '3700000', `maxhealth` = '3700000' WHERE `entry` IN (24850, 24892);
+-- WallB
+UPDATE gameobject SET `state` = '1' WHERE `guid` IN (50437);
+UPDATE gameobject SET `state` = '0' WHERE `guid` IN (50438);
 
 -- SWP FELMYST
 
@@ -17,7 +20,7 @@ UPDATE creature_template SET `minlevel` = '70', `maxlevel` = '70',`ScriptName` =
 UPDATE creature_template SET `ScriptName` = 'mob_felmyst_trail' WHERE `entry` IN (25267); 
 UPDATE creature_template SET `ScriptName` = 'mob_deathcloud' WHERE `entry` IN (25703); 
 
--- SWP MURU
+-- SWP MURU 50444 gate do kiljaedena
 
 -- Muru and Entropius
 UPDATE `creature_template` SET `lootid` = '25840', `mingold` = '2250000', `maxgold` = '2750000', `minhealth` = '5200000', `maxhealth` = '5200000', `mechanic_immune_mask` = '1073463287', `ScriptName` = 'boss_muru' WHERE `entry` IN (25741);
@@ -40,6 +43,8 @@ UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` =
 UPDATE `creature_template` SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `minhealth` = '100', `maxhealth` = '100',`ScriptName` = 'mob_killimp', `minlevel` = '70', `maxlevel` = '70' WHERE `entry` IN (25598); 
 -- Blue Dragon
 UPDATE `creature_template` SET `unit_flags` = '6',`npcflag` = '1', `minhealth` = '50000', `maxhealth` = '50000',`ScriptName` = 'dragon', `minlevel` = '71', `maxlevel` = '71', `RegenHealth` = '0' WHERE `entry` IN (25653); 
+-- Dragon Orb
+UPDATE `gameobject_template` SET `type` = '22', `data0` = '0', `data3` = '1', `data6` = '0', `data10` = '0', `ScriptName` = 'go_orb_of_the_blue_flight' WHERE `entry` IN (188415);
 -- Shadow Spike
 UPDATE `creature_template` SET `minhealth` = '1', `maxhealth` = '1', `faction_A` = '14', `faction_H` = '14', `ScriptName` = 'mob_shadowspike', `minlevel` = '71', `maxlevel` = '71' WHERE `entry` IN (30598); 
 

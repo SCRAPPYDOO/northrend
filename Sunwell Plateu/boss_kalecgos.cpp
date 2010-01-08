@@ -1,4 +1,4 @@
-/* Copyright (pCreature) 2006 - 2008 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -118,11 +118,13 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
     uint32 m_uiWildMagicTimer;
     uint32 m_uiSathrovarrTimer;
     uint32 m_uiNextEnrageTimer;
+    uint32 m_uiDoorTimer;
 
     bool bBanished;
     bool bEnraged;
     bool bSathrospawnd;
     bool bCheck;
+    bool bIsDoorClosed;
 
     void Reset()
     {
@@ -130,6 +132,13 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
        {
             m_pInstance->SetData(DATA_KALECGOS_EVENT,NOT_STARTED);
             m_pInstance->SetData(DATA_SATHROVARR_EVENT,NOT_STARTED);
+
+            if (GameObject* pForceBarrier = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_FORCEFIELD)))
+                pForceBarrier->SetGoState(GO_STATE_ACTIVE);
+            if (GameObject* pWallA = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_A)))
+                pWallA->SetGoState(GO_STATE_READY);
+            if (GameObject* pWallB = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_B)))
+                pWallB->SetGoState(GO_STATE_ACTIVE);
        }      
 
         m_uiSpectralBlastTimer      = urand(20000, 25000);
@@ -138,6 +147,7 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
         m_uiFrostBreathTimer        = 15000;
         m_uiWildMagicTimer          = 10000;
         m_uiSathrovarrTimer         = 35000;
+        m_uiDoorTimer               = 15000;
 
         m_uiNormalGUID = 0;
 
@@ -145,6 +155,7 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
         bSathrospawnd        = false;
         bCheck               = true;
         bBanished            = false;
+        bIsDoorClosed        = false;      
 
         if (m_creature->HasAura(SPELL_CRAZED_RAGE))
             m_creature->RemoveAurasDueToSpell(SPELL_CRAZED_RAGE);
@@ -155,6 +166,7 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
 
     void Aggro(Unit* pWho)
     {
+        m_uiDoorTimer = 15000;
         DoScriptText(SAY_EVIL_AGGRO, m_creature);
         if (m_pInstance)
             m_pInstance->SetData(DATA_KALECGOS_EVENT, IN_PROGRESS);
@@ -166,7 +178,15 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(DATA_KALECGOS_EVENT, DONE);
+            if (GameObject* pForceBarrier = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_FORCEFIELD)))
+                pForceBarrier->SetGoState(GO_STATE_ACTIVE);
+            if (GameObject* pWallA = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_A)))
+                pWallA->SetGoState(GO_STATE_ACTIVE);
+            if (GameObject* pWallB = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_B)))
+                pWallB->SetGoState(GO_STATE_ACTIVE);
+        }
     }
 
     void CastWildMagic()
@@ -202,6 +222,17 @@ struct MANGOS_DLL_DECL boss_kalecgosAI : public ScriptedAI
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
+
+        if(m_uiDoorTimer < uiDiff && !bIsDoorClosed)
+        {
+            if (GameObject* pForceBarrier = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_FORCEFIELD)))
+                pForceBarrier->SetGoState(GO_STATE_READY);
+            if (GameObject* pWallA = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_A)))
+                pWallA->SetGoState(GO_STATE_READY);
+            if (GameObject* pWallB = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_KALECGOS_FIGHT_GATE_B)))
+                pWallB->SetGoState(GO_STATE_READY);
+            bIsDoorClosed = true;
+        }m_uiDoorTimer -= uiDiff;
 
         if (m_creature->HasAura(SPELL_BANISH))
         {

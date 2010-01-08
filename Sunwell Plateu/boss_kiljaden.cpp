@@ -223,28 +223,26 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
  
     ScriptedInstance* pInstance;
     
-    uint64 m_uiKalecgosGUID;
-    uint64 m_uiAnveenaGUID;
-
     //BlueShield WorkArround
     uint32 m_uiCancelShieldTimer;
 
+    //Dragons Event Timers
     uint64 m_uiDragonGUID[4];
-
     uint32 m_uiOrbTimer;
     bool m_bBoolOrb;
-
-    uint32 m_uiKalecgosTimer;
-    bool m_bIsKalecgosSpawned;
 
     //SpeachTimers
     uint32 m_uiKJOrdersTimer;
 
     //Anvena and Kalecgos Timer
+    uint64 m_uiKalecgosGUID;
+    uint64 m_uiAnveenaGUID;
+    uint32 m_uiKalecgosTimer;
+    uint32 m_uiKalecgosAnvenaTimer;
     uint32 m_uiKalecgosAnvenaCount;
     bool m_bIsAnvena;
-    uint32 m_uiKalecgosAnvenaTimer;
-
+    bool m_bIsKalecgosSpawned;
+    
     //FireBloom Targets Table
     uint64 m_uiFireBloomTarget[5];
 
@@ -280,23 +278,19 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
  
     void Reset()
     {
-        //BlueShield WorkArround
-        m_uiCancelShieldTimer = 300000;
-
-        //creatures
-        m_uiKalecgosGUID = 0;
-        m_uiAnveenaGUID = 0;
-
         //SpeachTimers
-        m_uiKJOrdersTimer = 10000;
-
-        m_bIsAnvena = false;
+        m_uiKJOrdersTimer       = 10000;
 
         //Kalecgos Event
-        m_uiKalecgosTimer = 25000;
-        m_bIsKalecgosSpawned = false;
+        m_uiKalecgosTimer       = 25000;
+        m_bIsKalecgosSpawned    = false;
+        m_bIsAnvena             = false;
+        m_uiKalecgosGUID        = 0;
+        m_uiAnveenaGUID         = 0;
 
-        m_bBoolOrb = true;
+        ////Dragons Event Timers
+        m_uiCancelShieldTimer   = 300000;
+        m_bBoolOrb              = true;
 
         //Phase2
         m_uiSoulFlyTimer        = 1000;
@@ -307,7 +301,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
         m_uiShieldOrbTimer      = 25000;
 
         //Phase3
-        m_bShadowSpikeEnds     = false;
+        m_bShadowSpikeEnds      = false;
         m_uiSpikesCount         = 9;
 
         m_bDarknessOfSoulsCasting  = false;
@@ -388,13 +382,14 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
     void JustDied(Unit* Killer) 
     {
         DoPlaySoundToSet(m_creature, SAY_KJ_DEATH);
-
         if(pInstance)
             pInstance->SetData(DATA_KILJAEDEN_EVENT, DONE);
     }
 
     void DamageDeal(Unit* pDoneTo, uint32& uiDamage) 
     {
+        if(!pDoneTo)
+            return;
         if(pDoneTo->HasAura(AURA_BLUESHIELD,0))
             uiDamage = uiDamage * 0.05;
     }
@@ -414,7 +409,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                     case 3: DoPlaySoundToSet(m_creature, SAY_KJ_OFFCOMBAT4); break;
                     case 4: DoPlaySoundToSet(m_creature, SAY_KJ_OFFCOMBAT5); break;
 		        }
-                m_uiKJOrdersTimer = 30000;
+                m_uiKJOrdersTimer = 60000;
             }else m_uiKJOrdersTimer -= diff;
         }
 
@@ -431,19 +426,19 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                return;
 
         //FireBloom Damage WorkArround
-        if (m_uiFireBloomCheck < diff)
+        if(m_uiFireBloomCheck < diff)
         {
             if(m_uiFireBloomCount < 10)
                 for(uint8 i=0; i<5; ++i)
                 {
                     if(Unit* FireTarget = Unit::GetUnit(*m_creature, m_uiFireBloomTarget[i]))
-                        FireTarget->CastSpell(FireTarget, SPELL_FIREBLOOM_EFF, true);
+                        if(FireTarget->isAlive())
+                            FireTarget->CastSpell(FireTarget, SPELL_FIREBLOOM_EFF, true);
                 }
             ++m_uiFireBloomCount;
             m_uiFireBloomCheck = 2000;
         }else m_uiFireBloomCheck -= diff;
 
-        // After Each Phase Dragons Are Spawned
         if((m_uiOrbTimer < diff) && !m_bBoolOrb)
         {
             switch (rand()%4)
@@ -464,17 +459,18 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
             m_bBoolOrb = true;
         }else m_uiOrbTimer -= diff;
 
+        //Shield of Blue m_uiDragonGUID[i]
         for(uint8 i=0; i<4; ++i)
         {
             if(Unit* Dragon = Unit::GetUnit((*m_creature), m_uiDragonGUID[i]))
                 if(Dragon && Dragon->HasAura(SPELL_SHIELD_OF_BLUE))
                 {
-                    m_uiCancelShieldTimer = 5000;
+                    m_uiCancelShieldTimer = 6000;
                     std::list<HostileReference *> t_list = m_creature->getThreatManager().getThreatList();
                     for(std::list<HostileReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
                     {
                         Unit *TargetedPlayer = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());  
-                        if (TargetedPlayer && TargetedPlayer->GetTypeId() == TYPEID_PLAYER && TargetedPlayer->IsWithinDistInMap(Dragon, 10) && !TargetedPlayer->HasAura(AURA_BLUESHIELD))
+                        if (TargetedPlayer && TargetedPlayer->GetTypeId() == TYPEID_PLAYER && TargetedPlayer->IsWithinDistInMap(Dragon, 15) && !TargetedPlayer->HasAura(AURA_BLUESHIELD))
                             TargetedPlayer->CastSpell(TargetedPlayer,AURA_BLUESHIELD,true);
                     }
                 }
@@ -558,7 +554,6 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                 if(ShieldOrb)
                     ShieldOrb->AI()->AttackStart(m_creature->getVictim()); 
             }
-            
             m_uiShieldOrbTimer = 50000; 
         }else m_uiShieldOrbTimer -= diff;
 
@@ -573,17 +568,12 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
             if(m_bPhase5)
                 m_uiSinisterCount = 12;
             for(uint8 i=0; i<m_uiSinisterCount; ++i)
-			{
                 if(Unit* Sinister = Unit::GetUnit((*m_creature), m_uiSinisterGUID[i][0]))
-				{
-					if(!Sinister->isDead())
-					{
+					if(Sinister->isAlive())
 						if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
 							Sinister->CastSpell(target, m_uiSinisterGUID[i][1], true);
-					}
-				}
-			}
-            m_uiSinnisterCastTimer = 8000;
+
+            m_uiSinnisterCastTimer = urand(8000,16000);
         }else m_uiSinnisterCastTimer -= diff;
 
         //Phase4
@@ -596,13 +586,13 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                 h=0;
             
             for(uint8 i=0; i<h; ++i)
-            {
                 if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
                     Creature* Armagedon = m_creature->SummonCreature(ID_ARMAGEDON, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
-            }
+
             m_uiAramageddonTimer = 14000;
         }else m_uiAramageddonTimer -= diff;
 
+        //ShadowSpike Explosions
         if((m_uiShadowSpikeEndsTimer < diff) && m_bShadowSpikeEnds && m_bPhase3)
         {
             if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
@@ -612,7 +602,6 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                     cShadowSpike->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     cShadowSpike->setFaction(14);
                 }
-
                 //target->CastSpell(target, SPELL_SHADOWSPIKE_EXP, false);
             }
             ++m_uiSpikesCount;
@@ -648,7 +637,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
 		        }
             m_creature->CastSpell(m_creature, SPELL_DARKNESS_OF_SOULS, false);
             m_bDarknessOfSoulsCasting = true;
-            m_uiDarknessExplosionTimer = 8500;
+            m_uiDarknessExplosionTimer = 7000;
         }else m_uiDarknessOfSoulsTimer -= diff;
 
         //Phases
@@ -660,6 +649,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                     Sinister(((Player*)victim),0,4);
 
             //Start Timerow  Dochodzacych w 3 Fazie
+            m_uiFlameDartTimer         = 20000;
             m_uiSinnisterCastTimer     = 10000;
             m_uiShadowSpikeTimer       = 30000;
             m_uiFlameDartTimer         = 40000;
@@ -680,6 +670,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                     Sinister(((Player*)victim),4,8);
 
             //Start Timerow  Dochodzacych w 4 Fazie
+            m_uiFlameDartTimer         = 20000;
             m_uiAramageddonTimer       = 2000;  //100% ok
             m_bPhase4 = true;
             m_uiDarknessOfSoulsTimer   = 45000;
@@ -695,6 +686,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                 if (victim && (victim->GetTypeId() == TYPEID_PLAYER))
                     Sinister(((Player*)victim),8,12);
             //Start Timerow  Dochodzacych w 5 Fazie
+            m_uiFlameDartTimer = 20000;
             m_uiShadowSpikeTimer = 1000;
             m_uiDarknessOfSoulsTimer   = 45000;
             m_bPhase5 = true;
@@ -719,18 +711,17 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
         {
             if(m_uiShadowSpikeTimer < diff)
             {
-                DoCast(m_creature->getVictim(), SPELL_SHADOWSPIKE);
-
+                //DoCast(m_creature->getVictim(), SPELL_SHADOWSPIKE);
                 m_bShadowSpikeEnds         = true;
                 m_uiShadowSpikeEndsTimer    = 500;
                 m_uiSpikesCount             = 0;
-                m_uiShadowSpikeTimer        = 90000;
+                m_uiShadowSpikeTimer        = urand(65000,95000);
             }else m_uiShadowSpikeTimer -= diff;
 
             if(m_uiFlameDartTimer < diff)
             {
                 DoCast(m_creature->getVictim(), SPELL_FLAMEDARTS);
-                m_uiFlameDartTimer = 33000;
+                m_uiFlameDartTimer = urand(41000,63000);
             }else m_uiFlameDartTimer -= diff;
         }
 
@@ -738,7 +729,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
         if(m_uiLegionLightingTimer < diff)
         {
             DoCast(m_creature->getVictim(), SPELL_LEGION_LIGHTING);
-            m_uiLegionLightingTimer = 11000;
+            m_uiLegionLightingTimer = urand(18000,26000);
         }else m_uiLegionLightingTimer -= diff;
 
         if(m_uiFireBloomTimer < diff)
@@ -750,7 +741,7 @@ struct MANGOS_DLL_DECL boss_kiljadenAI : public Scripted_NoMovementAI
                 m_uiFireBloomCount = 0;
                 //DoCast(target, SPELL_FIREBLOOM, true);
             }
-            m_uiFireBloomTimer = 25000;
+            m_uiFireBloomTimer = urand(34000,56000);
         }else m_uiFireBloomTimer -= diff;
 
         if(m_uiSoulFlyTimer < diff)
@@ -873,7 +864,7 @@ struct MANGOS_DLL_DECL mob_orbAI : public Scripted_NoMovementAI
  
     void Reset()
     {
-        m_uiSpellTimer = 1000;
+        m_uiSpellTimer = 2000;
         m_creature->setFaction(14);
         m_creature->SetVisibility(VISIBILITY_ON);
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -883,7 +874,6 @@ struct MANGOS_DLL_DECL mob_orbAI : public Scripted_NoMovementAI
     {
         if(pDoneTo->HasAura(AURA_BLUESHIELD,0))
             uiDamage = uiDamage * 0.05;
-
     }
 
     void UpdateAI(const uint32 diff)
@@ -899,7 +889,7 @@ struct MANGOS_DLL_DECL mob_orbAI : public Scripted_NoMovementAI
                 if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
                     m_creature->CastSpell(target, SPELL_ORB_BOLT, true);
             }
-            m_uiSpellTimer = 1000;
+            m_uiSpellTimer = 2000;
         }else m_uiSpellTimer -= diff;
     }
 };
@@ -933,7 +923,6 @@ struct MANGOS_DLL_DECL mob_armagedonAI : public Scripted_NoMovementAI
     {
         if(pDoneTo->HasAura(AURA_BLUESHIELD,0))
             uiDamage = uiDamage * 0.05;
-
     }
 
     void UpdateAI(const uint32 diff)
@@ -984,7 +973,6 @@ struct MANGOS_DLL_DECL mob_shadowspikeAI : public Scripted_NoMovementAI
     {
         if(pDoneTo->HasAura(AURA_BLUESHIELD,0))
             uiDamage = uiDamage * 0.05;
-
     }
 
     void UpdateAI(const uint32 diff)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2008 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -41,6 +41,7 @@ struct MANGOS_DLL_DECL instance_sunwell_plateau : public ScriptedInstance
     instance_sunwell_plateau(Map *map) : ScriptedInstance(map) {Initialize();};
 
     uint32 Encounters[ENCOUNTERS];
+    std::string strInstData;
 
     /** Creatures **/
     uint64 Kalecgos_Dragon;
@@ -139,6 +140,9 @@ struct MANGOS_DLL_DECL instance_sunwell_plateau : public ScriptedInstance
         switch(gobj->GetEntry())
         {
             case 188421: ForceField         = gobj->GetGUID(); break;
+                if ((Encounters[0] == DONE) || (Encounters[0] == NOT_STARTED))
+                    gobj->SetGoState(GO_STATE_ACTIVE);
+                break;
             case 188075: FireBarrier        = gobj->GetGUID();
                 if (Encounters[1] == DONE)
                     gobj->SetGoState(GO_STATE_ACTIVE);
@@ -148,10 +152,23 @@ struct MANGOS_DLL_DECL instance_sunwell_plateau : public ScriptedInstance
             case 187896: Gate[2]            = gobj->GetGUID(); break;
             case 187990: Gate[3]            = gobj->GetGUID(); break;
             case 188118: Gate[4]            = gobj->GetGUID(); break;
+                if (Encounters[4] == DONE)
+                    gobj->SetGoState(GO_STATE_ACTIVE);
+                break;
             case 185483: KalecWall          = gobj->GetGUID(); break;
-            case 186261: KalecFightWallA    = gobj->GetGUID(); break;
-            case 186262: KalecFightWallB    = gobj->GetGUID(); break;
+            //case 186261: KalecFightWallA    = gobj->GetGUID(); break;
+            //case 186262: KalecFightWallB    = gobj->GetGUID(); break;
             case 175946: FelmistWall        = gobj->GetGUID(); break;
+            case 188523: KalecFightWallA    = gobj->GetGUID(); break;
+                if (Encounters[0] == DONE)
+                    gobj->SetGoState(GO_STATE_ACTIVE);
+                else if (Encounters[0] == NOT_STARTED) 
+                    gobj->SetGoState(GO_STATE_READY);
+                break;
+            case 188524: KalecFightWallB    = gobj->GetGUID(); break;
+                if ((Encounters[0] == DONE) || (Encounters[0] == NOT_STARTED))
+                    gobj->SetGoState(GO_STATE_ACTIVE);
+                break;
         }
     }
 
@@ -197,6 +214,7 @@ struct MANGOS_DLL_DECL instance_sunwell_plateau : public ScriptedInstance
             case DATA_GATE_4:                   return Gate[4];             break;
             case DATA_GATE_3:                   return Gate[3];             break;
             case DATA_GO_FIRE_BARRIER:          return FireBarrier;         break;
+            case DATA_GO_FORCEFIELD:               return ForceField;          break;
             
             case DATA_RANDOM_SPECTRAL_PLAYER:
                 return *(SpectralRealmList.begin() + rand()%SpectralRealmList.size());
@@ -222,7 +240,51 @@ struct MANGOS_DLL_DECL instance_sunwell_plateau : public ScriptedInstance
 
             case DATA_SET_SPECTRAL_CHECK:  SpectralRealmTimer = data; break;
             case DATA_INST_EJECT_PLAYERS:  EjectPlayers(); break;
-                }
+        }
+
+        if (data == DONE)
+        {
+            OUT_SAVE_INST_DATA;
+
+            std::ostringstream saveStream;
+            saveStream << Encounters[0] << " " << Encounters[1] << " " << Encounters[2] << " "
+                << Encounters[3] << " " << Encounters[4] << " " << Encounters[5] << " " << Encounters[6] << " "
+                << Encounters[7] << " " << Encounters[8] << " " << Encounters[9];
+
+            strInstData = saveStream.str();
+
+            SaveToDB();
+            OUT_SAVE_INST_DATA_COMPLETE;
+        }
+    }
+
+    const char* Save()
+    {
+        return strInstData.c_str();
+    }
+
+    void Load(const char* chrIn)
+    {
+        if (!chrIn)
+        {
+            OUT_LOAD_INST_DATA_FAIL;
+            return;
+        }
+
+        OUT_LOAD_INST_DATA(chrIn);
+
+        std::istringstream loadStream(chrIn);
+        loadStream >> Encounters[0] >> Encounters[1] >> Encounters[2] >> Encounters[3] >> Encounters[4] >> Encounters[5] >> Encounters[6] >>
+            Encounters[7] >> Encounters[8] >> Encounters[9];
+        
+        //not changing m_uiEncounter[0], TYPE_EVENT_RUN must not reset to NOT_STARTED
+        for(uint8 i = 0; i < ENCOUNTERS; ++i)
+        {
+            if (Encounters[i] == IN_PROGRESS)
+                Encounters[i] = NOT_STARTED;
+        }
+
+        OUT_LOAD_INST_DATA_COMPLETE;
     }
 
     void SetData64(uint32 id, uint64 guid)
