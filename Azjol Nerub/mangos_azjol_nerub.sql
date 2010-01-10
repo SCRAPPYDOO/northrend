@@ -1,6 +1,6 @@
 -- Krik Thir 
 -- podwyzszyc dmg robakow + dodac aoe chmure z 3 wiekszych
-UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_krik_thir', `minmana` ='46854', `maxmana` ='46854' WHERE `entry` IN (28684);
+UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_krikthir', `minmana` ='46854', `maxmana` ='46854' WHERE `entry` IN (28684);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287', `minmana` = '54960', `maxmana` = '54960' WHERE `entry` IN (31612);
 -- Krik Thir mini bosy
 UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_silthik' WHERE `entry` IN (28731);
