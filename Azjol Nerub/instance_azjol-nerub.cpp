@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -22,7 +22,7 @@ SDCategory: Azjol-Nerub
 EndScriptData */
 
 #include "precompiled.h"
-#include "def_azjol-nerub.h"
+#include "azjol-nerub.h"
 
 struct MANGOS_DLL_DECL instance_azjol_nerub : public ScriptedInstance
 {
@@ -45,16 +45,6 @@ struct MANGOS_DLL_DECL instance_azjol_nerub : public ScriptedInstance
         m_uiDoor_Anubarak_2GUID = 0;
         m_uiDoor_Anubarak_3GUID = 0;
     }
-
-	/*
-	void OnCreatureCreate(Creature* pCreature)
-    {
-        switch(pCreature->GetEntry())
-        {
-			case 28922: m_uiCrusherGUID = pCreature->GetGUID(); break;
-        }
-    }
-	*/
 
     void OnObjectCreate(GameObject* pGo)
     {
@@ -81,29 +71,6 @@ struct MANGOS_DLL_DECL instance_azjol_nerub : public ScriptedInstance
                     pGo->SetGoState(GO_STATE_ACTIVE);
                 break;
         }
-    }
-
-	/*
-    uint64 GetData64(uint32 uiIdentifier)
-    {
-        switch(uiIdentifier)
-        {
-			case DATA_CRUSHER:				return m_uiCrusherGUID;
-        }
-        return 0;
-    }
-	*/
-
-	uint32 GetData(uint32 identifier)
-    {
-        switch(identifier)
-        {
-            case DATA_SILTHIK_EVENT:       return m_auiEncounter[3];
-            case DATA_GASHRA_EVENT:        return m_auiEncounter[4];
-            case DATA_NARJIL_EVENT:        return m_auiEncounter[5];
-			case DATA_CRUSHER_EVENT:	   return m_auiEncounter[6];
-        }
-        return 0;
     }
 
     void SetData(uint32 uiType, uint32 uiData)
@@ -140,19 +107,6 @@ struct MANGOS_DLL_DECL instance_azjol_nerub : public ScriptedInstance
                         pGo->SetGoState(GO_STATE_READY);
                 }
                 break;
-
-            case DATA_SILTHIK_EVENT:      
-				m_auiEncounter[3] = uiData;
-				break;
-            case DATA_GASHRA_EVENT:        
-				m_auiEncounter[4] = uiData;
-				break;
-            case DATA_NARJIL_EVENT:        
-				m_auiEncounter[5] = uiData;
-				break;
-			case DATA_CRUSHER_EVENT:        
-				m_auiEncounter[6] = uiData;
-				break;	
         }
 
         if (uiData == DONE)

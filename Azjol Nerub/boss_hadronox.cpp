@@ -1,6 +1,4 @@
-/*
- * Copyright (C) 2009 Trinity <http://www.trinitycore.org/>
- *
+/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -8,12 +6,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /* Script Data Start
@@ -29,7 +27,7 @@ update creature_template set scriptname = 'boss_hadronox' where entry = '';
 *** SQL END ***/
 
 #include "precompiled.h"
-#include "def_azjol-nerub.h"
+#include "azjol-nerub.h"
 
 enum
 {
@@ -64,152 +62,175 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
     boss_hadronoxAI(Creature* pCreature) : ScriptedAI(pCreature)
 	{
         m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        m_bIsHeroicMode = pCreature->GetMap()->IsHeroic();
+        m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
 	ScriptedInstance* m_pInstance;
-    bool m_bIsHeroicMode;
-	bool m_bIsSpawned;
-	//bool m_bIsPhase;
+    bool m_bIsRegularMode;
+    bool m_bIsPhase;
 
-	//bool Crusher1Dead;
-	//bool Crusher2Dead;
-
-	//uint64 Crusher1GUID;
-	//uint64 Crusher2GUID;
-
-	uint32 uiAcidCloudTimer;
-	uint32 uiLeechPoisonTimer;
-	uint32 uiPierceArmorTimer;
-	uint32 uiWebGrabTimer;
+    uint64 m_uiCrusherGUID[3];
+	uint32 m_uiAcidCloudTimer;
+	uint32 m_uiLeechPoisonTimer;
+	uint32 m_uiPierceArmorTimer;
+	uint32 m_uiWebGrabTimer;
+    uint8  m_uiPhase;
 
     void Reset() 
 	{
 		//Timers
-		uiAcidCloudTimer = 12000;
-		uiLeechPoisonTimer = 10000;
-		uiPierceArmorTimer = 7000;
-		uiWebGrabTimer = 20000;
+		m_uiAcidCloudTimer = 12000;
+		m_uiLeechPoisonTimer = 10000;
+		m_uiPierceArmorTimer = 7000;
+		m_uiWebGrabTimer = 20000;
 
-		//Crusher1GUID = 0;
-		//Crusher2GUID = 0;
+		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+		m_creature->SetVisibility(VISIBILITY_OFF);
+		
+        m_bIsPhase = false;
+        m_uiPhase = 0;
 
-		//Crusher1Dead = false;
-		//Crusher2Dead = false;
-
-		//m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-		//m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-		//m_creature->SetVisibility(VISIBILITY_OFF);
-		m_bIsSpawned = false;
-		//m_bIsPhase = true;
-
+        for(uint8 i=0; i<3; ++i)
+            m_uiCrusherGUID[i] = 0;
 	}
 
-    void MoveInLineOfSight(Unit *who)
-	{
-		if(m_pInstance && m_pInstance->GetData(DATA_CRUSHER_EVENT) == DONE)
-		{
-			if(!m_bIsSpawned)
-			{
-				//m_creature->SetVisibility(VISIBILITY_ON);
-				//m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-				//m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-				Aggro(who);
-				//SpawnMobs();
-				m_bIsSpawned = true;
-			}
-		}
-	}
+    void Aggro(Unit* who)
+    {
+        m_creature->StopMoving();
+        m_creature->GetMotionMaster()->Clear();
+        m_creature->GetMotionMaster()->MoveIdle();
 
-	void SpawnMobs() 
-	{
-		//Creature* Crusher = m_creature->SummonCreature(MOB_CRUSHER	, MobPos[0][0], MobPos[0][1], MobPos[0][2], 4, TEMPSUMMON_CORPSE_DESPAWN, 1000);
-		//Crusher1GUID = Crusher->GetGUID();
-        //Creature* Crusher1 = m_creature->SummonCreature(MOB_CRUSHER	, MobPos[1][0], MobPos[1][1], MobPos[1][2], 4, TEMPSUMMON_CORPSE_DESPAWN, 1000);
-		//Crusher2GUID = Crusher1->GetGUID();
-	}
-
-    void Aggro(Unit* who) 
-	{
-		if(!m_creature->getVictim())
-			m_creature->AI()->AttackStart(who);
-	}
-
-    void JustDied(Unit* killer)  {}
+        SpawnGroups(1);
+        ++m_uiPhase;
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_HADRONOX, IN_PROGRESS);
+    }
 
     void KilledUnit(Unit *victim)
     {
         if (victim == m_creature)
             return;
 
-		if(victim->HasAura(m_bIsHeroicMode ? H_SPELL_LEECH_POISON : SPELL_LEECH_POISON))
+		if(victim->HasAura(m_bIsRegularMode ? SPELL_LEECH_POISON : H_SPELL_LEECH_POISON))
 			DoCast(m_creature, SPELL_LEECH_POISON_DEADTRIGGER);
+    }
+
+    void SpawnGroups(uint8 i)
+    {
+        uint32 ID[3];
+
+        uint8 k=0;
+        if(i == 2)
+            k=1;
+
+        float fSpawnY = m_creature->GetPositionX();
+        float fSpawnX = m_creature->GetPositionY();
+
+        ID[0] = MOB_CRUSHER; 
+        ID[1] = MOB_CRYPTFIEND; 
+        ID[2] = MOB_CHAMPION;
+
+        for(k=k; k<i; ++k)
+        {
+            Creature* Trash = m_creature->SummonCreature(ID[k], fSpawnX+1, fSpawnY+1, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+            if(Trash) 
+            {
+                if(m_creature->getVictim())
+                    Trash->AI()->AttackStart(m_creature->getVictim());
+                m_uiCrusherGUID[k] = Trash->GetGUID();
+            }
+        }
+
+        for(uint8 l=0; l<i; ++l)
+            for(uint8 k=1; k<3; ++k)
+            {
+                Creature* Trash = m_creature->SummonCreature(ID[k], fSpawnX+1, fSpawnY+1, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+                if(Trash) 
+			        if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
+				        Trash->AI()->AttackStart(target);
+            }
     }
 
     void UpdateAI(const uint32 diff)
     {
-		/*
-		if(m_bIsPhase)
-		{
-			Unit* Crusher1;
-			Unit* Crusher2;
-			if (Crusher1GUID)
-				Crusher1 = Unit::GetUnit((*m_creature), Crusher1GUID);
-			if (Crusher2GUID)
-				Crusher2 = Unit::GetUnit((*m_creature), Crusher2GUID);
-			if (Crusher1 && Crusher1->isDead() )
-				Crusher1Dead = true;
-			if (Crusher2 && Crusher2->isDead())
-				Crusher2Dead = true;
-			if (Crusher1Dead && Crusher2Dead)
-			{
-				m_creature->GetMotionMaster()->Clear();
-				m_creature->SetVisibility(VISIBILITY_ON);
-				m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-				m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-				m_bIsPhase = false;
-	
-				Crusher1GUID = 0;
-				Crusher2GUID = 0;
-			}
-		} */
-
 		//Return since we have no target
-		if (!m_creature->SelectHostilTarget() || !m_creature->getVictim() )
+		if (!m_creature->SelectHostileTarget() || !m_creature->getVictim() )
 		   return;  
 
-		if(uiPierceArmorTimer < diff)
-		{
-			DoCast(m_creature->getVictim(), SPELL_PIERCE_ARMOR); 
-			uiPierceArmorTimer = 8000+rand()%8000;
-		}uiPierceArmorTimer -= diff;
+        if(!m_bIsPhase)
+        {
+            m_creature->StopMoving();
+            m_creature->GetMotionMaster()->Clear();
+            m_creature->GetMotionMaster()->MoveIdle();
 
-		if(uiAcidCloudTimer < diff)
+            if(m_pInstance)
+            {            
+                if(m_uiPhase == 2)
+                {
+                    Unit* Crusher1 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[1]);
+                    Unit* Crusher2 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[2]);
+                    if(Crusher1 && !Crusher1->isAlive() && Crusher2 && !Crusher2->isAlive())
+                    {
+                        m_uiAcidCloudTimer = 12000;
+	                    m_uiLeechPoisonTimer = 10000;
+	                    m_uiPierceArmorTimer = 7000;
+	                    m_uiWebGrabTimer = 20000;
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        m_creature->SetVisibility(VISIBILITY_ON);
+                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                        m_bIsPhase = true;
+                    }
+                }
+
+                if(m_uiPhase == 1)
+                    if(Unit* Crusher = Unit::GetUnit(*m_creature, m_uiCrusherGUID[0]))
+                        if(!Crusher->isAlive())  
+                        {
+                            SpawnGroups(2);
+                            ++m_uiPhase;
+                        }
+            }
+            return;
+        }
+
+		if(m_uiPierceArmorTimer < diff)
+		{
+            if(m_creature->getVictim())
+			    DoCast(m_creature->getVictim(), SPELL_PIERCE_ARMOR); 
+			m_uiPierceArmorTimer = 8000+rand()%8000;
+		}else m_uiPierceArmorTimer -= diff;
+
+		if(m_uiAcidCloudTimer < diff)
 		{
 			if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-				m_creature->CastSpell(target, m_bIsHeroicMode ? H_SPELL_ACID_CLOUD : SPELL_ACID_CLOUD, false);
-			uiAcidCloudTimer = 25000+rand()%10000;
-		}uiAcidCloudTimer -= diff;
+				m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_ACID_CLOUD : H_SPELL_ACID_CLOUD, false);
+			m_uiAcidCloudTimer = 25000+rand()%10000;
+		}else m_uiAcidCloudTimer -= diff;
 
-		if(uiLeechPoisonTimer < diff)
+		if(m_uiLeechPoisonTimer < diff)
 		{
 			for(uint8 i=0; i<3; ++i)
 			{
 				if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-					m_creature->CastSpell(target, m_bIsHeroicMode ? H_SPELL_LEECH_POISON : SPELL_LEECH_POISON, false);
+					m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_LEECH_POISON : H_SPELL_LEECH_POISON, false);
 			}
-			uiLeechPoisonTimer = 10000;
-		}uiLeechPoisonTimer -= diff;
+			m_uiLeechPoisonTimer = 10000;
+		}else m_uiLeechPoisonTimer -= diff;
 
-		if(uiWebGrabTimer < diff)
+        //Web Grab kicning in the air need hack this.
+        /*
+		if(m_uiWebGrabTimer < diff)
 		{
-			DoCast(m_creature->getVictim(), m_bIsHeroicMode ? H_SPELL_WEB_GRAB : SPELL_WEB_GRAB);
-			uiWebGrabTimer = 25000+rand()%10000;
-		}uiWebGrabTimer -= diff;
+            if(m_creature->getVictim())
+			    DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_WEB_GRAB : H_SPELL_WEB_GRAB);
+			m_uiWebGrabTimer = 25000+rand()%10000;
+		}else m_uiWebGrabTimer -= diff;
+        */
 
 		DoMeleeAttackIfReady();
-
     }
 };
 

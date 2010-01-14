@@ -18,7 +18,8 @@
 SDName: boss_krikthir_the_gatewatcher
 SDAuthor: ScrappyDoo
 SD%Complete: 95% 
-SDComment: completed
+SDComment: completed, scripts for mini boses can be removed after ACID support
+exp from swarm need to be deleted in DB
 SDCategory: Azjol Nerub
 EndScriptData */
 
@@ -65,9 +66,16 @@ enum Spells
 };
 
 enum Creatures
-{
+    {
+    MOB_SKIRMISHER                      = 28734,
+    MOB_SHADOWCASTER                    = 28733,
+    MOB_WARRIOR                         = 28732,
+
     MOB_SKITTERING_SWARMER              = 28735,
     MOB_SKITTERING_SWARMER_INFECTOR     = 28736,
+    MOB_SILTHIK                         = 28731,
+    MOB_GASHRA                          = 28730,
+    MOB_NARJIL                          = 28729,
 };
 
 struct MANGOS_DLL_DECL boss_krikthirAI : public ScriptedAI
@@ -82,46 +90,71 @@ struct MANGOS_DLL_DECL boss_krikthirAI : public ScriptedAI
 	ScriptedInstance* m_pInstance;
     bool   m_bIsRegularMode;
 	bool   m_bIsEnraged;
-	bool   m_bIsSpeaking;
+    bool   m_bIsPhase;
+    uint8  m_uiPhase;
 	uint32 m_uiMindFlyTimer;
 	uint32 m_uiSwarmTimer;
 	uint32 m_uiCurseTimer;
+    uint32 m_uiSoundTimer;
+    uint64 m_uiMiniBossGUID[3];
 
     void Reset() 
 	{
 		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-		m_uiMindFlyTimer = 15000+rand()%5000;
-		m_uiSwarmTimer	 = 15000;
-		m_uiCurseTimer	 = 25000+rand()%10000;
+        m_uiPhase        = 0;
+        m_uiMindFlyTimer = urand(10000,15000);
+        m_uiSwarmTimer	 = 15000;
+        m_uiCurseTimer	 = 20000;
+        m_uiSoundTimer   = 25000;
+        m_bIsPhase       = false;
+        m_bIsEnraged     = false; 
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_KRIKTHIR, NOT_STARTED);
 	}
 
-    void MoveInLineOfSight(Unit *who)
-	{
-		if(m_bIsSpeaking)
-		{
-			switch(rand()%3)
-			{
-				case 0: DoScriptText(SAY_PREFIGHT_1, m_creature);break;
-				case 1: DoScriptText(SAY_PREFIGHT_2, m_creature);break;
-				case 2: DoScriptText(SAY_PREFIGHT_3, m_creature);break;
-			}
-			m_bIsSpeaking = false;
-		}
-		if (m_pInstance && m_pInstance->GetData(TYPE_SILTHIK) == DONE &&
-			m_pInstance->GetData(TYPE_GASHRA) == DONE && m_pInstance->GetData(TYPE_NARJIL) == DONE)
-		{
-			m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-			Aggro(who);
-		}
+    void SpawnGroups(uint8 i)
+    {
+        uint32 ID[3];
+        float fSpawnY = 0;
+        float fSpawnX = 0;
 
+        switch (i)
+        {
+            case 0: ID[0] = MOB_SILTHIK; ID[1] = MOB_SKIRMISHER; ID[2] = MOB_SHADOWCASTER; fSpawnX = 546.393; fSpawnY = 665.541; break;
+            case 1: ID[0] = MOB_GASHRA; ID[1] = MOB_WARRIOR; ID[2] = MOB_SKIRMISHER; fSpawnX = 529.4408; fSpawnY = 660.663; break;
+            case 2: ID[0] = MOB_NARJIL; ID[1] = MOB_SHADOWCASTER; ID[2] = MOB_WARRIOR; fSpawnX = 508.576; fSpawnY = 668.013; break;
+        }
+
+        Creature* MiniBoss = m_creature->SummonCreature(ID[0], fSpawnX, fSpawnY, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+        if(MiniBoss) 
+        {
+            if(m_creature->getVictim())
+                MiniBoss->AI()->AttackStart(m_creature->getVictim());
+            m_uiMiniBossGUID[i] = MiniBoss->GetGUID();
+        }
+
+        for(uint8 k=1; k<3; ++k)
+        {
+            Creature* Trash = m_creature->SummonCreature(ID[k], fSpawnX+1, fSpawnY+1, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+            if(Trash)
+                if(m_creature->getVictim())
+                    Trash->AI()->AttackStart(m_creature->getVictim());
+        }
     }
 
     void Aggro(Unit* who)
     {
-        DoScriptText(SAY_AGGRO, m_creature);
-		if(!m_creature->getVictim())
-			m_creature->AI()->AttackStart(who);
+        m_creature->StopMoving();
+        m_creature->GetMotionMaster()->Clear();
+        m_creature->GetMotionMaster()->MoveIdle();
+
+        SpawnGroups(0);
+        ++m_uiPhase;
+        DoScriptText(SAY_SEND_GROUP_1, m_creature);
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_KRIKTHIR, IN_PROGRESS);
     }
 
     void JustDied(Unit* killer)
@@ -133,18 +166,14 @@ struct MANGOS_DLL_DECL boss_krikthirAI : public ScriptedAI
 
 	void SummonSwarm()
 	{
-		for(uint8 j=0; j<15; ++j)
+		for(uint8 j=0; j<16; ++j)
 		{
-			Creature* Summoned = m_creature->SummonCreature(MOB_SKITTERING_SWARMER, m_creature->GetPositionX()+rand()%20, m_creature->GetPositionY()+rand()%20, m_creature->GetPositionZ()+rand()%20, m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000);
-			if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-				Summoned->AI()->AttackStart(target);
-		}
-
-		for(uint8 k=0; k<3; ++k)
-		{
-			Creature* Summoned = m_creature->SummonCreature(MOB_SKITTERING_SWARMER_INFECTOR, m_creature->GetPositionX()+rand()%20, m_creature->GetPositionY()+rand()%20, m_creature->GetPositionZ()+rand()%20, m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000);
-			if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-				Summoned->AI()->AttackStart(target);
+            uint32 ID = MOB_SKITTERING_SWARMER;
+            if(j<3)
+                ID = MOB_SKITTERING_SWARMER_INFECTOR;
+			if(Creature* Summoned = m_creature->SummonCreature(ID, m_creature->GetPositionX()+rand()%20, m_creature->GetPositionY()+rand()%20, m_creature->GetPositionZ()+rand()%20, m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 1000))
+			    if (Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
+				    Summoned->AI()->AttackStart(target);
 		}
 	}
 
@@ -163,47 +192,101 @@ struct MANGOS_DLL_DECL boss_krikthirAI : public ScriptedAI
 
 	void UpdateAI(const uint32 diff)
     {
-
-		if(!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        if(!m_bIsPhase)
         {
-		    return;  
+            if(m_uiSoundTimer < diff)
+            {
+		        switch(urand(0,3))
+			    {
+				    case 0: DoScriptText(SAY_PREFIGHT_1, m_creature);break;
+				    case 1: DoScriptText(SAY_PREFIGHT_2, m_creature);break;
+				    case 2: DoScriptText(SAY_PREFIGHT_3, m_creature);break;
+                }
+                m_uiSoundTimer = 40000;
+            }m_uiSoundTimer -= diff;
         }
 
-		if((m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) <= 10)
-		{
-			if(!m_bIsEnraged)
-			{
-				DoCast(m_creature, SPELL_FRENZY);
-				m_bIsEnraged = true;
-			}
-		}
+	    if(!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+	        return;  
 
-		if(m_uiMindFlyTimer < diff)
-		{
-			if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-			    DoCast(target, m_bIsRegularMode ? SPELL_MIND_FLAY : H_SPELL_MIND_FLAY, false); 
-			m_uiMindFlyTimer = 15000+rand()%5000;
-		}m_uiMindFlyTimer -= diff;
+        if(!m_bIsPhase)
+        {
+            m_creature->StopMoving();
+            m_creature->GetMotionMaster()->Clear();
+            m_creature->GetMotionMaster()->MoveIdle();
 
-		if(m_uiCurseTimer < diff)
-		{
-			if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
-			    m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_CURSE_OF_FATIGUE : H_SPELL_CURSE_OF_FATIGUE, false); 
-			m_uiCurseTimer = 25000+rand()%10000;
-		}m_uiCurseTimer -= diff;
+            if(m_pInstance)
+            {            
+                if(m_uiPhase == 3)
+                    if(Unit* MiniBoss = Unit::GetUnit(*m_creature, m_uiMiniBossGUID[2]))
+                        if(!MiniBoss->isAlive())
+                        {
+                            m_uiMindFlyTimer = urand(10000,15000);
+                            m_uiSwarmTimer	 = 16000;
+                            m_uiCurseTimer	 = 20000;
+	                        DoScriptText(SAY_AGGRO, m_creature);
+                            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                            if(m_creature->getVictim())
+                                m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                            m_bIsPhase = true;
+                        }
 
-		if(m_uiSwarmTimer < diff)
-		{
-			switch(rand()%2)
-			{
-				case 0: DoScriptText(SAY_SWARM_1, m_creature);break;
-				case 1: DoScriptText(SAY_SWARM_2, m_creature);break;
-			}
-			SummonSwarm();
-			m_uiSwarmTimer = 15000;
-		}m_uiSwarmTimer -= diff;
+                if(m_uiPhase == 2)
+                    if(Unit* MiniBoss = Unit::GetUnit(*m_creature, m_uiMiniBossGUID[1]))
+                        if(!MiniBoss->isAlive())  
+                        {
+                            DoScriptText(SAY_SEND_GROUP_2, m_creature);
+                            SpawnGroups(2);
+                            ++m_uiPhase;
+                        }
 
-		DoMeleeAttackIfReady();
+                if(m_uiPhase == 1)
+                    if(Unit* MiniBoss = Unit::GetUnit(*m_creature, m_uiMiniBossGUID[0]))
+                        if(!MiniBoss->isAlive())          
+                        {
+                            DoScriptText(SAY_SEND_GROUP_1, m_creature);
+                            SpawnGroups(1);
+                            ++m_uiPhase;
+                        }
+            }
+            return;
+        }
+
+	    if((m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) <= 10)
+	    {
+		    if(!m_bIsEnraged)
+		    {
+			    DoCast(m_creature, SPELL_FRENZY);
+			    m_bIsEnraged = true;
+		    }
+	    }
+
+	    if(m_uiMindFlyTimer < diff)
+	    {
+		    if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
+		        DoCast(target, m_bIsRegularMode ? SPELL_MIND_FLAY : H_SPELL_MIND_FLAY, false); 
+		    m_uiMindFlyTimer = 15000+rand()%5000;
+	    }m_uiMindFlyTimer -= diff;
+
+	    if(m_uiCurseTimer < diff)
+	    {
+		    if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0))
+		        m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_CURSE_OF_FATIGUE : H_SPELL_CURSE_OF_FATIGUE, false); 
+		    m_uiCurseTimer = 25000+rand()%10000;
+	    }m_uiCurseTimer -= diff;
+
+	    if(m_uiSwarmTimer < diff)
+	    {
+		    switch(urand(0,1))
+		    {
+			    case 0: DoScriptText(SAY_SWARM_1, m_creature);break;
+			    case 1: DoScriptText(SAY_SWARM_2, m_creature);break;
+		    }
+		    SummonSwarm();
+		    m_uiSwarmTimer = 15000;
+	    }m_uiSwarmTimer -= diff;
+
+	    DoMeleeAttackIfReady();
     }
 };
 
@@ -234,25 +317,6 @@ struct MANGOS_DLL_DECL mob_silthikAI : public ScriptedAI
 		m_uiPoisonSprayTimer = 5000;
 		m_uiInfectedBiteTimer = 1000;
 		m_uiWebWarpTimer = 15000+rand()%10000;
-    }
-
-	void MoveInLineOfSight(Unit *who)
-	{
-		if(m_pInstance && m_pInstance->GetData(TYPE_NARJIL) == DONE)
-			Aggro(who);
-	}
-
-	void Aggro(Unit *who)
-	{
-		DoScriptText(SAY_SEND_GROUP_1, m_creature);
-		if(!m_creature->getVictim())
-			m_creature->AI()->AttackStart(who);
-	}
-
-    void JustDied(Unit *killer)
-    {
-		if (m_pInstance)
-            m_pInstance->SetData(TYPE_SILTHIK, DONE);
     }
 
     void UpdateAI(const uint32 diff) 
@@ -314,25 +378,6 @@ struct MANGOS_DLL_DECL mob_gashraAI : public ScriptedAI
 		m_uiWebWarpTimer = 15000+rand()%10000;
     }
 
-	void MoveInLineOfSight(Unit *who)
-	{
-		if(m_pInstance && m_pInstance->GetData(TYPE_SILTHIK) == DONE)
-			Aggro(who);
-	}
-
-	void Aggro(Unit *who)
-	{
-		DoScriptText(SAY_SEND_GROUP_2, m_creature);
-		if(!m_creature->getVictim())
-			m_creature->AI()->AttackStart(who);
-	}
-
-    void JustDied(Unit *killer)
-    {
-		if (m_pInstance)
-            m_pInstance->SetData(TYPE_GASHRA, DONE);
-    }
-
     void UpdateAI(const uint32 diff) 
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -391,24 +436,10 @@ struct MANGOS_DLL_DECL mob_narjilAI : public ScriptedAI
 		m_uiWebWarpTimer = 15000+rand()%10000;
     }
 
-	void MoveInLineOfSight(Unit *who)
-	{
-		if(m_pInstance && m_pInstance->GetData(TYPE_GASHRA) == DONE)
-			Aggro(who);
-	}
-
 	void Aggro(Unit *who)
 	{
 		DoScriptText(SAY_SEND_GROUP_3, m_creature);
-		if(!m_creature->getVictim())
-			m_creature->AI()->AttackStart(who);
 	}
-
-    void JustDied(Unit *killer)
-    {
-		if (m_pInstance)
-            m_pInstance->SetData(TYPE_NARJIL, DONE);
-    }
 
     void UpdateAI(const uint32 diff) 
     {
