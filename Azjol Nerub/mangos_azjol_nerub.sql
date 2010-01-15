@@ -1,38 +1,37 @@
--- Krik Thir 
--- podwyzszyc dmg robakow + dodac aoe chmure z 3 wiekszych
+-- AZJOL NERUB
+
+-- Krik Thir norm/hero
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_krikthir', `minmana` ='46854', `maxmana` ='46854' WHERE `entry` IN (28684);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287', `minmana` = '54960', `maxmana` = '54960' WHERE `entry` IN (31612);
--- Krik Thir mini bosy
+
+-- Krik Thir mini bosy norm/hero
 UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_silthik' WHERE `entry` IN (28731);
 UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_gashra' WHERE `entry` IN (28730);
 UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_narjil' WHERE `entry` IN (28729);
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31616);
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31615);
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31617);
--- Krik Thir summony
--- 59363 heroic hp
+
+-- Swarmer Infector norm/hero
+UPDATE creature_template SET `minhealth` ='4000', `maxhealth` ='4000', `minlevel` = '72', `maxlevel` = '72', `AIName` = 'EventAI', `Scriptname` = '' WHERE `entry` = '28736';
 UPDATE creature_template SET `minhealth` ='6556', `maxhealth` ='6556', `AIName` = 'EventAI', `Scriptname` = '' WHERE `entry` = '31613';
--- 52446
-UPDATE creature_template SET `AIName` = 'EventAI', `Scriptname` = '' WHERE `entry` = '28736';
+
+-- Swarmer norm/hero no xp at kill
+UPDATE creature_template SET `flags_extra` ='64' WHERE `entry` = '28735';
+UPDATE creature_template SET `minhealth` ='328', `maxhealth` ='328', `minlevel` = '80', `maxlevel` = '80', `flags_extra` ='64' WHERE `entry` = '31614';
+
+
+-- Hadronox
+UPDATE creature_template SET `faction_A` = '14', `faction_H` = '14', `movementId` ='0', `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_hadronox' WHERE `entry` IN (28921);
+UPDATE creature_template SET `faction_A` = '14', `faction_H` = '14', `movementId` ='0', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31611);
+-- UPDATE creature SET position_x = '529.157715', position_y = '576.377502', position_z = '733.610474', orientation = '5.295866' WHERE guid = '127401';
+
 
 -- Anubarak
 -- ai scripts dla  2 summonow czy tam jednego :D
 -- Trigger Invisible Mode
 UPDATE `creature_template` SET `flags_extra` = '128' WHERE `entry` IN (29184);
 
--- Hadronox
-/*
-Event Bos  ma  initialize 1  moby
-po zabiicu 1  ida 2  i pozneij bos
-reszzta eventu nie do zrobienia narazie :D
-*/
-UPDATE creature_template SET `faction_A` = '14', `faction_H` = '14', `movementId` ='0', `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_hadronox' WHERE `entry` IN (28921);
-UPDATE creature_template SET `faction_A` = '14', `faction_H` = '14', `movementId` ='0', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31611);
--- UPDATE creature SET position_x = '529.157715', position_y = '576.377502', position_z = '733.610474', orientation = '5.295866' WHERE guid = '127401';
-
-
-
--- Trash Creature Template
 -- Anub'ar Webspinner Shadowcaster Necromancer venomancer
 UPDATE `creature_template` SET `minmana` = '7500', `maxmana` = '7500' WHERE `entry` IN (29335,28733,29098,29064,29217);
 UPDATE `creature_template` SET `minmana` = '8979', `maxmana` = '8979' WHERE `entry` IN (31609,31605,31602,31601,31607);
@@ -44,17 +43,7 @@ UPDATE `creature_template` SET `mindmg` = '307', `maxdmg` = '438', `attackpower`
 UPDATE `creature_template` SET `mindmg` = '422', `maxdmg` = '586', `attackpower` = '642', `dmg_multiplier` = '13' WHERE `entry` IN (31599);
 
 
--- ACID AZJOL NERUB
-
--- Do ROBIENIA
--- maski dla  kazdego moba
--- BOSS1 event 
--- Po Smierci zostawia chmure aoe
--- Skittering Infector 28736
--- missing aoe effect after deatch
--- Boss2 event
--- Anub'ar Crusher 28922
--- cpp
+-- ACID
 
 -- Azjol Nerub Mobs
 -- NORMAL (28732,28733,28734,29062,29063,29064,29096,29097,29098,29117,29118,29128,29335,29340,29217,29216,28922);
@@ -148,8 +137,3 @@ INSERT INTO creature_ai_scripts VALUES (NULL, '29128', '0', '0', '100', '5', '60
 INSERT INTO creature_ai_scripts VALUES (NULL, '29335', '0', '0', '100', '3', '500', '500','2000','4000', '11', '54290', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Anub\'ar Webspinner - Cast Web Shot (Normal)');
 INSERT INTO creature_ai_scripts VALUES (NULL, '29335', '0', '0', '100', '5', '500', '500','2000','4000', '11', '59362', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Anub\'ar Webspinner - Cast Web Shot (Heroic)');
 INSERT INTO creature_ai_scripts VALUES (NULL, '29335', '0', '0', '100', '7', '9000', '11000','9000','11000', '11', '52086', '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Anub\'ar Webspinner - Cast Web Wrap');
-
--- Anub'ar Brood Keeper
--- 0 abilietes
-
-
