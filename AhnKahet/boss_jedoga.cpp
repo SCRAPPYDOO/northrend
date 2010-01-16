@@ -145,8 +145,9 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
             Unit* cVolunteer = Unit::GetUnit(*m_creature, m_uiVolunteerGUID[i]);
             if(cVolunteer && cVolunteer->isAlive())
             {
-                cVolunteer->SetVisibility(VISIBILITY_OFF);
                 cVolunteer->setDeathState(JUST_DIED);
+                cVolunteer->SetVisibility(VISIBILITY_OFF);
+                cVolunteer->setFaction(35);
             }
         }
     }
@@ -226,6 +227,7 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
                     m_creature->CastSpell(m_creature, SPELL_GIFT, false);
                     //m_creature->DealDamage(cVolunteer, cVolunteer->GetHealth(), true, 
                     cVolunteer->SetVisibility(VISIBILITY_OFF);
+                    cVolunteer->setFaction(35);
                 }
 
                 m_bIsSacrifice = false;
@@ -264,19 +266,22 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
 
         if(m_uiCycloneTimer < uiDiff)
         {
-            m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_CYCLONE_STRIKE : SPELL_CYCLONE_STRIKE_H , false);
+            if(m_creature->getVictim())
+                m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_CYCLONE_STRIKE : SPELL_CYCLONE_STRIKE_H , false);
             m_uiCycloneTimer = urand(20000,30000);
         }else m_uiCycloneTimer -= uiDiff;
 
         if(m_uiBoltTimer < uiDiff)
         {
-            m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_BOLT : SPELL_LIGHTING_BOLT_H, false);
+            if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
+                m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_LIGHTING_BOLT : SPELL_LIGHTING_BOLT_H, false);
             m_uiBoltTimer = urand(5000,10000);
         }else m_uiBoltTimer -= uiDiff;
 
         if(m_uiThunderTimer < uiDiff)
         {
-            m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_THUNDER_SHOCK : SPELL_THUNDER_SHOCK_H , false);
+            if(Unit* target = SelectUnit(SELECT_TARGET_RANDOM,0))
+                m_creature->CastSpell(target, m_bIsRegularMode ? SPELL_THUNDER_SHOCK : SPELL_THUNDER_SHOCK_H , false);
             m_uiThunderTimer = urand(15000,25000);
         }else m_uiThunderTimer -= uiDiff;
 
