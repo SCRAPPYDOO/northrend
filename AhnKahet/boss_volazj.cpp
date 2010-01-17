@@ -16,7 +16,7 @@
 
 /* ScriptData
 SDName: Boss_Volazj
-SD%Complete: 95%
+SD%Complete: 90%
 SDComment: Clones more support neded
 SDCategory: Ahn'kahet
 SDAuthor: ScrappyDoo (c) Andeeria

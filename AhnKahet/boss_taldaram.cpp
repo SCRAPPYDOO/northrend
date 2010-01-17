@@ -16,17 +16,14 @@
 
 /* ScriptData
 SDName: Boss_Taldaram
-SD%Complete: 50%
-SDComment:
+SD%Complete: 90%
+SDComment: more difficult
 SDCategory: Ahn'kahet
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
 
 /* todo
 need t be  replaced in DB on ground  position
-
-koniec castowania  po otrzymaniu 40k dmga
-damagedone() ?
 */
 
 #include "precompiled.h"
