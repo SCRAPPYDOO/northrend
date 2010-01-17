@@ -16,7 +16,7 @@
 
 /* ScriptData
 SDName: Boss_Jedoga
-SD%Complete: 20%
+SD%Complete: 95%
 SDComment:
 SDCategory: Ahn'kahet
 SDAuthor: ScrappyDoo (c) Andeeria
@@ -24,7 +24,7 @@ EndScriptData */
 
 /* ToDo
 DB support for Voulounter -> nomevemnt Ai
-Despawn Volounteers at creature die or  reset
+Despawn Volounteers at creature die or reset
 */
 
 #include "precompiled.h"
@@ -210,7 +210,6 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
             {
                 //If Sacrifice End Start attack party and go walk
                 m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                //m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-10, m_creature->GetOrientation());
                 if(m_creature->getVictim())
                     m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
 
@@ -225,7 +224,6 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
                     }
 
                     m_creature->CastSpell(m_creature, SPELL_GIFT, false);
-                    //m_creature->DealDamage(cVolunteer, cVolunteer->GetHealth(), true, 
                     cVolunteer->SetVisibility(VISIBILITY_OFF);
                     cVolunteer->setFaction(35);
                 }
@@ -246,11 +244,9 @@ struct MANGOS_DLL_DECL boss_jedogaAI : public ScriptedAI
             m_creature->StopMoving();
             m_creature->GetMotionMaster()->Clear();
             m_creature->GetMotionMaster()->MoveIdle();
-            //m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+10, m_creature->GetOrientation());
             m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-
+            
             m_uiSacrificedGUID = urand(0,29);
-
             Unit* cVolunteer = Unit::GetUnit(*m_creature, m_uiVolunteerGUID[m_uiSacrificedGUID]);
             if(cVolunteer && cVolunteer->isAlive())
             {
@@ -302,6 +298,8 @@ struct MANGOS_DLL_DECL mob_volounteerAI : public Scripted_NoMovementAI
 
     void UpdateAI(const uint32 diff)
     {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
     }
 };
 
