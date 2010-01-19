@@ -7,7 +7,7 @@
 
 enum
 {
-    MAX_ENCOUNTER               = 6,
+    MAX_ENCOUNTER               = 3,
 
     TYPE_KRIKTHIR               = 1,
     TYPE_HADRONOX               = 2,

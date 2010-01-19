@@ -58,7 +58,7 @@ UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150' WHERE `ent
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` = 'boss_volazj' WHERE `entry` IN (29311);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31464);
 -- Ahn-Kahet::twisted Visage 30625
-UPDATE creature_template SET `mindmg` = '500', `maxdmg` = '1000', `baseattacktime` = '2000', `minhealth` = '8000', `maxhealth` = '8000' WHERE `entry` IN (30625);
+UPDATE creature_template SET `mindmg` = '500', `maxdmg` = '1000', `baseattacktime` = '2000', `minhealth` = '8000', `maxhealth` = '8000', `maxmana` = '8000', `minmana` = '8000' WHERE `entry` IN (30625);
 -- Insert heroic creature?
 
 

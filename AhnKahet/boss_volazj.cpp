@@ -14,7 +14,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* ScriptData
+/* ScriptData 
 SDName: Boss_Volazj
 SD%Complete: 90%
 SDComment: Clones more support neded
@@ -84,11 +84,12 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
     ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
 
-    uint64 m_uiImageGUID[4][2];
+    uint64 m_uiImageGUID[5][2];
     uint32 m_uiImageCastTimer;
     uint32 m_uiFlyTimer;
     uint32 m_uiBoltTimer;
     uint8  m_uiPhase;
+    uint8  m_uiImageCount;
 
     void Reset()
     {
@@ -97,7 +98,7 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
         m_uiBoltTimer       = urand(5000,10000);
         m_uiPhase           = 1;
 
-        for(uint8 i=0; i<4; ++i)
+        for(uint8 i=0; i<5; ++i)
         {
             m_uiImageGUID[i][0] = 0;
             m_uiImageGUID[i][1] = 0;
@@ -121,17 +122,19 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
 
     void SwitchPhase(uint8 m_uiPhaseNo)
     {
+        m_uiImageCount = 0;
         DoScriptText(SAY_INSANITY, m_creature);
-        for(uint8 i =0; i<4; ++i)
+        std::list<HostileReference *> t_list = m_creature->getThreatManager().getThreatList();
+        for(std::list<HostileReference *>::iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
         {
             Creature* cImage = m_creature->SummonCreature(CREATURE_VISAGE, m_creature->GetPositionX()+urand(2,25), m_creature->GetPositionY()+urand(2,25), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
             if(cImage)
             {
-                m_uiImageGUID[i][0] = cImage->GetGUID();
-                if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                Unit *TargetedPlayer = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());  
+                if(TargetedPlayer->GetTypeId() == TYPEID_PLAYER)
                 {
                     uint32 spell;
-                    switch(pPlayer->getClass())
+                    switch(TargetedPlayer->getClass())
                     {
                         case CLASS_PRIEST:  spell = SPELL_PRIEST; break;
                         case CLASS_PALADIN: spell = SPELL_PALADIN; break;
@@ -143,13 +146,14 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
                         case CLASS_SHAMAN:  spell = SPELL_SHAMAN; break;
                         case CLASS_HUNTER:  spell = SPELL_HUNTER; break;
                     }
-                    m_uiImageGUID[i][1] = spell;
-                    cImage->AI()->AttackStart(pPlayer);
-                    cImage->SetDisplayId(pPlayer->GetDisplayId());
+                    m_uiImageGUID[m_uiImageCount][0] = cImage->GetGUID();
+                    m_uiImageGUID[m_uiImageCount][1] = spell;
+                    cImage->SetDisplayId(TargetedPlayer->GetDisplayId());
+                    cImage->AI()->AttackStart(TargetedPlayer);
+                    ++m_uiImageCount;
                 }
             }
         }
-
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         m_uiPhase = m_uiPhaseNo;
     }
@@ -167,7 +171,7 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
         //Images Attack
         if(m_uiImageCastTimer < uiDiff && (m_uiPhase == 2 || m_uiPhase == 3))
         {
-            for(uint8 i=0; i<4; ++i)
+            for(uint8 i=0; i<5; ++i)
             {
                 Unit* cImage = Unit::GetUnit((*m_creature), m_uiImageGUID[i][0]);
 				if(cImage && cImage->isAlive())
@@ -183,11 +187,15 @@ struct MANGOS_DLL_DECL boss_volazjAI : public ScriptedAI
             m_creature->GetMotionMaster()->Clear();
             m_creature->GetMotionMaster()->MoveIdle();
 
-            Unit* pImage1 = Unit::GetUnit(*m_creature, m_uiImageGUID[0][0]);
-            Unit* pImage2 = Unit::GetUnit(*m_creature, m_uiImageGUID[1][0]);
-            Unit* pImage3 = Unit::GetUnit(*m_creature, m_uiImageGUID[2][0]);
-            Unit* pImage4 = Unit::GetUnit(*m_creature, m_uiImageGUID[3][0]);
-            if(pImage1 && !pImage1->isAlive() && pImage2 && !pImage2->isAlive() && pImage3 && !pImage3->isAlive() && pImage4 && !pImage4->isAlive())
+            uint8 m_uiDeadImagesCount = 0;
+            for(uint8 i=0;i<m_uiImageCount+1; ++i)
+            {
+                Unit* pImage = Unit::GetUnit(*m_creature, m_uiImageGUID[i][0]);
+                if(pImage && !pImage->isAlive())
+                    ++m_uiDeadImagesCount;
+            }
+
+            if(m_uiDeadImagesCount >= m_uiImageCount) 
             {
                 m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 if(m_creature->getVictim())

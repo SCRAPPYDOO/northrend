@@ -70,7 +70,7 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
     bool m_bIsRegularMode;
     bool m_bIsPhase;
 
-    uint64 m_uiCrusherGUID[3];
+    uint64 m_uiCrusherGUID[2];
 	uint32 m_uiAcidCloudTimer;
 	uint32 m_uiLeechPoisonTimer;
 	uint32 m_uiPierceArmorTimer;
@@ -87,7 +87,6 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
 
 		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-		m_creature->SetVisibility(VISIBILITY_OFF);
 		
         m_bIsPhase = false;
         m_uiPhase = 0;
@@ -120,10 +119,10 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
     void SpawnGroups(uint8 i)
     {
         uint32 ID[3];
-
-        uint8 k=0;
+        uint8 h=1;
         if(i == 2)
-            k=1;
+            h=2;
+      
 
         float fSpawnY = m_creature->GetPositionX();
         float fSpawnX = m_creature->GetPositionY();
@@ -132,9 +131,9 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
         ID[1] = MOB_CRYPTFIEND; 
         ID[2] = MOB_CHAMPION;
 
-        for(k=k; k<i; ++k)
+        for(uint8 k=0; k<h; ++k)
         {
-            Creature* Trash = m_creature->SummonCreature(ID[k], fSpawnX+1, fSpawnY+1, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+            Creature* Trash = m_creature->SummonCreature(ID[0], fSpawnX+1, fSpawnY+1, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
             if(Trash) 
             {
                 if(m_creature->getVictim())
@@ -169,8 +168,8 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
             {            
                 if(m_uiPhase == 2)
                 {
-                    Unit* Crusher1 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[1]);
-                    Unit* Crusher2 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[2]);
+                    Unit* Crusher1 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[0]);
+                    Unit* Crusher2 = Unit::GetUnit(*m_creature, m_uiCrusherGUID[1]);
                     if(Crusher1 && !Crusher1->isAlive() && Crusher2 && !Crusher2->isAlive())
                     {
                         m_uiAcidCloudTimer = 12000;
@@ -179,7 +178,6 @@ struct MANGOS_DLL_DECL boss_hadronoxAI : public ScriptedAI
 	                    m_uiWebGrabTimer = 20000;
                         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                        m_creature->SetVisibility(VISIBILITY_ON);
                         m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
                         m_bIsPhase = true;
                     }
