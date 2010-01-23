@@ -39,29 +39,33 @@ enum
 
     //spellId invalid
     SPELL_SUMMON_SPIDERLING = 29434,
+    CREATURE_SPIRDERLING    = 17055,
 };
 
-#define LOC_X1    3546.796
-#define LOC_Y1    -3869.082
-#define LOC_Z1    296.450
-
-#define LOC_X2    3531.271
-#define LOC_Y2    -3847.424
-#define LOC_Z2    299.450
-
-#define LOC_X3    3497.067
-#define LOC_Y3    -3843.384
-#define LOC_Z3    302.384
-
-struct MANGOS_DLL_DECL mob_webwrapAI : public ScriptedAI
+float fLoc[2][3] =
 {
-    mob_webwrapAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    (3546.796,-3869.082,296.450),
+    (3531.271,-3847.424,299.450),
+};
+
+struct MANGOS_DLL_DECL mob_webwrapAI : public Scripted_NoMovementAI
+{
+    mob_webwrapAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature) {Reset();}
 
     uint64 m_uiVictimGUID;
 
     void Reset()
     {
         m_uiVictimGUID = 0;
+    }
+
+    void JustDied(Unit* pKiller)
+    {
+        if (m_uiVictimGUID)
+        {
+            if (Unit* pVictim = Unit::GetUnit((*m_creature), m_uiVictimGUID))
+                pVictim->RemoveAurasDueToSpell(SPELL_WEBWRAP);
+        }
     }
 
     void SetVictim(Unit* pVictim)
@@ -121,13 +125,23 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
     void Aggro(Unit* pWho)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_MAEXXNA, IN_PROGRESS);
+
+            if (GameObject* pMaexDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(GO_ARAC_MAEX_INNER_DOOR)))
+                pMaexDoor->SetGoState(GO_STATE_READY);
+        }
     }
 
     void JustDied(Unit* pKiller)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_MAEXXNA, DONE);
+
+            if (GameObject* pMaexGate = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(GO_ARAC_MAEX_OUTER_DOOR)))
+                pMaexGate->SetGoState(GO_STATE_ACTIVE);
+        }
     }
 
     void JustReachedHome()
@@ -138,53 +152,20 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
 
     void DoCastWebWrap()
     {
-        ThreatList const& tList = m_creature->getThreatManager().getThreatList();
-        std::vector<Unit *> targets;
+        uint8 PlayersCount = 2;
+        if(m_bIsRegularMode)
+            PlayersCount = 1;
 
-        //This spell doesn't work if we only have 1 player on threat list
-        if (tList.size() < 2)
-            return;
-
-        //begin + 1 , so we don't target the one with the highest threat
-        ThreatList::const_iterator itr = tList.begin();
-        std::advance(itr, 1);
-
-        //store the threat list in a different container
-        for (;itr != tList.end(); ++itr)
+        for(uint8 i=0; i<PlayersCount; ++i)
         {
-            Unit* target = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());
-
-            //only on alive players
-            if (target && target->isAlive() && target->GetTypeId() == TYPEID_PLAYER)
-                targets.push_back(target);
-        }
-
-        //cut down to size if we have more than 3 targets
-        while(targets.size() > 3)
-            targets.erase(targets.begin()+rand()%targets.size());
-
-        int i = 0;
-
-        for(std::vector<Unit *>::iterator iter = targets.begin(); iter!= targets.end(); ++iter, ++i)
-        {
-            // Teleport the 3 targets to a location on the wall and summon a Web Wrap on them
-            switch(i)
+            if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 1))
             {
-                case 0:
-                    DoTeleportPlayer((*iter), LOC_X1, LOC_Y1, LOC_Z1, (*iter)->GetOrientation());
-                    if (Creature* pWrap = m_creature->SummonCreature(16486, LOC_X1, LOC_Y1, LOC_Z1, 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
-                        ((mob_webwrapAI*)pWrap->AI())->SetVictim((*iter));
-                    break;
-                case 1:
-                    DoTeleportPlayer((*iter), LOC_X2, LOC_Y2, LOC_Z2, (*iter)->GetOrientation());
-                    if (Creature* pWrap = m_creature->SummonCreature(16486, LOC_X2, LOC_Y2, LOC_Z2, 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
-                        ((mob_webwrapAI*)pWrap->AI())->SetVictim((*iter));
-                    break;
-                case 2:
-                    DoTeleportPlayer((*iter), LOC_X3, LOC_Y3, LOC_Z3, (*iter)->GetOrientation());
-                    if (Creature* pWrap = m_creature->SummonCreature(16486, LOC_X3, LOC_Y3, LOC_Z3, 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
-                        ((mob_webwrapAI*)pWrap->AI())->SetVictim((*iter));
-                    break;
+                if (pPlayer && pPlayer->isAlive() && pPlayer->GetTypeId() == TYPEID_PLAYER)
+                {
+                    //DoTeleportPlayer(pPlayer, fLoc[i][0], fLoc[i][1], fLoc[i][2], pPlayer->GetOrientation());
+                    if (Creature* pWrap = m_creature->SummonCreature(16486, pPlayer->GetPositionX(), pPlayer->GetPositionY(),pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
+                        ((mob_webwrapAI*)pWrap->AI())->SetVictim(pPlayer);
+                }
             }
         }
     }
@@ -193,6 +174,10 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
+
+        if(m_bEnraged)
+            if(!m_creature->HasAura(SPELL_FRENZY))
+                DoCast(m_creature, SPELL_FRENZY);
 
         // Web Wrap
         if (m_uiWebWrapTimer < uiDiff)
@@ -206,8 +191,9 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Web Spray
         if (m_uiWebSprayTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), SPELL_WEBSPRAY);
-            m_uiWebSprayTimer = 40000;
+            if(m_creature->getVictim())
+                DoCast(m_creature->getVictim(), SPELL_WEBSPRAY);
+            m_uiWebSprayTimer = 41000;
         }
         else
             m_uiWebSprayTimer -= uiDiff;
@@ -215,8 +201,9 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Poison Shock
         if (m_uiPoisonShockTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), SPELL_POISONSHOCK);
-            m_uiPoisonShockTimer = 20000;
+            if(m_creature->getVictim())
+                DoCast(m_creature->getVictim(), SPELL_POISONSHOCK);
+            m_uiPoisonShockTimer = 10000;
         }
         else
             m_uiPoisonShockTimer -= uiDiff;
@@ -224,7 +211,8 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Necrotic Poison
         if (m_uiNecroticPoisonTimer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), SPELL_NECROTICPOISON);
+            if(m_creature->getVictim())
+                DoCast(m_creature->getVictim(), SPELL_NECROTICPOISON);
             m_uiNecroticPoisonTimer = 30000;
         }
         else
@@ -233,7 +221,20 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         // Summon Spiderling
         if (m_uiSummonSpiderlingTimer < uiDiff)
         {
-            DoCast(m_creature, SPELL_SUMMON_SPIDERLING);
+            for(uint8 i=0; i<8; ++i)
+            {
+                Creature* pSpiderling = m_creature->SummonCreature(CREATURE_SPIRDERLING, m_creature->GetPositionX()+urand(2,6), m_creature->GetPositionY()+urand(2,6), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
+                if(pSpiderling)
+                {
+                    if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                        pSpiderling->AI()->AttackStart(pPlayer);
+                }
+            }
+
+            /*
+            if(m_creature)
+                DoCast(m_creature, SPELL_SUMMON_SPIDERLING);
+                */
             m_uiSummonSpiderlingTimer = 40000;
         }
         else
@@ -242,7 +243,8 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         //Enrage if not already enraged and below 30%
         if (!m_bEnraged && (m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) < 30)
         {
-            DoCast(m_creature, SPELL_FRENZY);
+            if(m_creature)
+                DoCast(m_creature, SPELL_FRENZY);
             m_bEnraged = true;
         }
 
