@@ -22,12 +22,8 @@ SDCategory: Utgarde Pinnacle
 EndScriptData */
 
 /*
-Agro bosa
-losowe wyrzucanie mobow
-set flag 14  atakflagi
-po 4  agro bosa
+ACID support for mini boses
 */
-
 
 #include "precompiled.h"
 #include "utgarde_pinnacle.h"
@@ -47,7 +43,15 @@ enum
     SPELL_WITHERING_ROAR    = 48256,
     SPELL_WITHERING_ROAR_H  = 59267,
 
-    SPELL_ARCING_SMASH      = 48260
+    SPELL_ARCING_SMASH      = 48260,
+};
+
+uint32 m_uiCreature[4] =
+{
+    {NPC_FURBOLG},
+    {NPC_WORGEN},            
+    {NPC_JORMUNGAR},           
+    {NPC_RHINO},
 };
 
 /*######
@@ -66,8 +70,33 @@ struct MANGOS_DLL_DECL boss_gortokAI : public ScriptedAI
     ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
 
+    bool   m_bIsEventNow;
+    uint32 m_uiRoarTimer;
+    uint32 m_uiImpaleTimer;
+    uint32 m_uiArcingSmashTimer;
+    uint8  m_uiPhase;
+
     void Reset()
     {
+        m_bIsEventNow        = true;
+        m_uiPhase            = 0;
+        m_uiRoarTimer        = urand(22000,28000);
+        m_uiImpaleTimer      = urand(15000,25000);
+        m_uiArcingSmashTimer = urand(10000,30000);
+
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE); 
+
+        for(uint8 i=0; i<4; ++i)
+        {
+            Creature* pAdd = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[i])));
+            if(pAdd && pAdd->isAlive())
+            {
+                pAdd->setFaction(35);
+                pAdd->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                pAdd->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE); 
+            }
+        }
     }
 
     void Aggro(Unit* pWho)
@@ -88,14 +117,16 @@ struct MANGOS_DLL_DECL boss_gortokAI : public ScriptedAI
             m_pInstance->SetData(TYPE_GORTOK, DONE);
     }
 
-    void StartAttack(uint32 uiType, Unit* pVictim)
+    void StartAttack(Unit* pVictim)
     {
-        Unit* pAdd = Unit::GetUnit(*m_creature, m_pInstance->GetData64(uiType));
+        Creature* pAdd = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[m_uiPhase])));
         if(pAdd && pAdd->isAlive())
         {
             pAdd->setFaction(14);
             pAdd->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            pAdd->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);  
+            pAdd->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE); 
+            if(pAdd->AI())
+                pAdd->AI()->AttackStart(pVictim);
         }
     }
 
@@ -104,8 +135,101 @@ struct MANGOS_DLL_DECL boss_gortokAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        //Trashes before Boss
+        if(m_bIsEventNow)
+        {
+            m_creature->StopMoving();
+            m_creature->GetMotionMaster()->Clear();
+            m_creature->GetMotionMaster()->MoveIdle();
 
+            /*
+            Creature* pAdd0 = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[0])));
+            Creature* pAdd1 = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[1])));
+            Creature* pAdd2 = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[2])));
+            Creature* pAdd3 = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiCreature[3])));
+            */
+
+            Creature* pAdd = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(m_uiPhase)));
+            if(pAdd && !pAdd->isAlive()) 
+            {
+                if((m_bIsRegularMode && m_uiPhase == 1) || m_uiPhase == 3)
+                {
+                    m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE); 
+                    if(m_creature->getVictim())
+                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+
+                    m_bIsEventNow = false;
+                    return;
+                }
+                ++m_uiPhase;
+
+                if(m_creature->getVictim())
+                    StartAttack(m_creature->getVictim());
+            }
+
+            /*
+            if(pAdd0 && !pAdd0->isAlive())
+            {
+                m_uiPhase = 1;
+                if(m_creature->getVictim())
+                    StartAttack(m_creature->getVictim());
+            }
+
+            if(pAdd1 && !pAdd1->isAlive())
+            {
+                if(m_bIsRegularMode)
+                {
+                    //zdejmij flagi
+                    if(m_creature->getVictim())
+                        m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+
+                    m_bIsEventNow = false;
+                    return;
+                }
+                m_uiPhase = 2;
+                if(m_creature->getVictim())
+                    StartAttack(m_creature->getVictim());   
+            }
+
+            if(pAdd2 && !pAdd2->isAlive())
+            {
+                m_uiPhase = 3;
+                if(m_creature->getVictim())
+                    StartAttack(m_creature->getVictim());
+            }
+
+            if(pAdd3 && !pAdd3->isAlive())
+            {
+                //zdejmij flagi
+                if(m_creature->getVictim())
+                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
+                m_bIsEventNow = false;
+                return;
+            }
+            */
+            return;
+        }
+
+        if(m_uiRoarTimer < uiDiff)
+        {
+            if(m_creature->getVictim())
+                m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_WITHERING_ROAR : SPELL_WITHERING_ROAR_H, false);
+            m_uiRoarTimer = urand(22000,28000);
+        }else m_uiRoarTimer -= uiDiff;
+
+        if(m_uiImpaleTimer < uiDiff)
+        {
+            if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                m_creature->CastSpell(pPlayer, m_bIsRegularMode ? SPELL_IMPALE : SPELL_IMPALE_H, false);
+            m_uiImpaleTimer = urand(15000,25000);
+        }else m_uiImpaleTimer -= uiDiff;
+
+        if(m_uiArcingSmashTimer < uiDiff)   
+        {
+            if(m_creature->getVictim())
+                m_creature->CastSpell(m_creature->getVictim(), SPELL_ARCING_SMASH, false);
+            m_uiArcingSmashTimer = urand(10000,30000);
+        }else m_uiArcingSmashTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
