@@ -1,0 +1,4 @@
+Volazji Shivers do sprawdzenia timers update i czy event  dziala  caly
+Jedoga timery sprawdzic  i teleport  voulountera pod bosa
+Nadox timers update
+Taldaram Cleanup i sprawdzic czy zdejmuje not attackable  po zdjeciu tarczy

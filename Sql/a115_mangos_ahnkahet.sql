@@ -1,13 +1,8 @@
--- Koordy Jedogi sumonow do poprawy nie raz ich nie widac
--- Grzyby dispaly i spele do zrobienia
-
-
 -- AHN KAHET
 
 -- Nadox Taldaram Jedoga Volazi Amanitar
 -- 29309,29308,29310,29311,30258
 -- 31469,31456,31465,31464,31463
-
 
 -- Ahn-Kahet::Nadox 29309 31456
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_nadox' WHERE `entry` IN (29309);
@@ -45,13 +40,14 @@ UPDATE creature_template SET `type_flags` = '0', `unit_flags` = '0' WHERE `entry
 
 -- Ahn-Kahet::Amanitar NOT COMPLETE YET
 DELETE FROM creature WHERE id = '30258';
--- INSERT INTO creature VALUES (NULL,30258,619,2,1,0,0,345.169,-869.813,-77.6156,6.03587,86400,0,0,431392,0,0,0);
-UPDATE creature_template SET `minhealth` = '431392', `maxhealth` = '431392', `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` = 'boss_amanitar' WHERE `entry` IN (30258);
-UPDATE creature_template SET `minhealth` = '431392', `maxhealth` = '431392', `mechanic_immune_mask` = '1073463287'  WHERE `entry` IN (31463);
+INSERT INTO creature VALUES (NULL,30258,619,2,1,0,0,345.169,-869.813,-77.6156,6.03587,86400,0,0,431392,0,0,0);
+UPDATE creature_template SET `mindmg` = '500', `maxdmg` = '700', `armor` = '6000', `dmg_multiplier` = '13', `attackpower` = '2000', `minhealth` = '431392', `maxhealth` = '431392', `mechanic_immune_mask` = '1073463287', `AIName` = '', `Scriptname` = 'boss_amanitar' WHERE `entry` IN (30258);
+UPDATE creature_template SET `mindmg` = '500', `maxdmg` = '700', `armor` = '6000', `dmg_multiplier` = '13', `attackpower` = '2000', `minhealth` = '431392', `maxhealth` = '431392', `mechanic_immune_mask` = '1073463287'  WHERE `entry` IN (31463);
 -- Ahn-Kahet::Mushrooms
-UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150', `AIName` = '', `Scriptname` = 'mob_healthymushroom' WHERE `entry` IN (30435);
-UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150', `AIName` = '', `Scriptname` = 'mob_poisonmushroom' WHERE `entry` IN (30391);
+UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150', `AIName` = '', `Scriptname` = 'mob_healthymushroom' WHERE `entry` IN (30391);
+UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150', `AIName` = '', `Scriptname` = 'mob_poisonmushroom' WHERE `entry` IN (30435);
 UPDATE creature_template SET `minhealth` = '150', `maxhealth` = '150' WHERE `entry` IN (31461,31462);
+UPDATE creature_template SET `modelid_A` = '11686', `modelid_H` = '11686' WHERE `entry` IN (31461,31462,30435,30391);
 
 
 -- Ahn-Kahet::Volazj2931131464

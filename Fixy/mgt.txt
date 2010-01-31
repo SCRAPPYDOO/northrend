@@ -1,0 +1,1 @@
+UPDATE `creature_template` SET `mindmg` = '', `maxdmg` = '', `attackpower` = '', `dmg_multiplier` = '' WHERE `entry` IN (24689,24690,24688,25577,25575,25576);
