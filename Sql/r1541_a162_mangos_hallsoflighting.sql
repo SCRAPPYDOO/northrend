@@ -14,13 +14,16 @@ UPDATE `creature_template` SET `mindmg` = '200', `maxdmg` = '400', `attackpower`
 -- HallsOfLighting::Ionar
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_ionar' WHERE `entry` IN (28546);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31537);
+-- HallsOfLighting::Spark movement speed
+UPDATE creature_template SET `speed` = '0.8' WHERE `entry` IN (28926,31867);
 
 -- HallsOfLighting::Loken
 UPDATE creature_template SET `AIName` = '', `mechanic_immune_mask` = '1073463287', `Scriptname` = 'boss_loken' WHERE `entry` IN (28923);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (31538);
 
 -- HallsOfLighting::Thunderer and Siegebreaker flags remove
-UPDATE `creature_template` SET `unit_flags` = '0',`type_flags` = '0' WHERE `entry` IN (28965,28961);
+UPDATE `creature_template` SET `unit_flags` = '0',`type_flags` = '0' WHERE `entry` IN (28965,28961,30980,30982);
+
 
 -- HALLS OF LIGHTING LOOT
 
@@ -71,7 +74,13 @@ VALUES
 ('31538', '37855', '0', '2', '1', '1', '0', '0', '0'),
 ('31538', '37854', '0', '2', '1', '1', '0', '0', '0'),
 ('31538', '41799', '9', '0', '1', '1', '0', '0', '0'),
-('31538', '43102', '100', '0', '1', '1', '0', '0', '0');
+('31538', '43102', '100', '0', '1', '1', '0', '0', '0'),
+
+-- Haals Of lighting
+('31533', '40752', '100', '0', '1', '1', '0', '0', '0'),
+('31536', '40752', '100', '0', '1', '1', '0', '0', '0'),
+('31537', '40752', '100', '0', '1', '1', '0', '0', '0'),
+('31538', '40752', '100', '0', '1', '1', '0', '0', '0');
 
 -- HALLS OF LIGHTING ACID
 

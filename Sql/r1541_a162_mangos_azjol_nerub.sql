@@ -41,41 +41,46 @@ UPDATE `creature_template` SET `mindmg` = '346', `maxdmg` = '499', `attackpower`
 UPDATE `creature_template` SET `mindmg` = '307', `maxdmg` = '438', `attackpower` = '314', `dmg_multiplier` = '7.5' WHERE `entry` IN (29216);
 UPDATE `creature_template` SET `mindmg` = '422', `maxdmg` = '586', `attackpower` = '642', `dmg_multiplier` = '13' WHERE `entry` IN (31599);
 
--- Heroic Boss Drop
--- Drop withcout badges and quest items need to be added soon
+-- Azjol-Nerub::Loot Template
+UPDATE creature_template SET `lootid` = '31612' WHERE `entry` IN (31612);
+UPDATE creature_template SET `lootid` = '31611' WHERE `entry` IN (31611);
+UPDATE creature_template SET `lootid` = '31610' WHERE `entry` IN (31610);
 
 DELETE FROM creature_loot_template WHERE entry IN (31612,31611,31610);
 
+INSERT INTO creature_loot_template
+(entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount, lootcondition, condition_value1, condition_value2)
+VALUES
+
 -- Azjol-Nerub::Kirkthir hero loot id 31612
-UPDATE creature_template SET `lootid` = '31612' WHERE `entry` IN (31612);
-INSERT INTO `creature_loot_template` VALUES ('31612', '43852', '1.4', '0', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31612', '37218', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31612', '37216', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31612', '37219', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31612', '37217', '0', '1', '1', '1', '0', '0', '0');
+('31612', '43852', '1.4', '0', '1', '1', '0', '0', '0'),
+('31612', '37218', '0', '1', '1', '1', '0', '0', '0'),
+('31612', '37216', '0', '1', '1', '1', '0', '0', '0'),
+('31612', '37219', '0', '1', '1', '1', '0', '0', '0'),
+('31612', '37217', '0', '1', '1', '1', '0', '0', '0'),
+-- Azjol-Nerub::Hadronox
+('31611', '43852', '2', '0', '1', '1', '0', '0', '0'),
+('31611', '37221', '0', '1', '1', '1', '0', '0', '0'),
+('31611', '37230', '0', '1', '1', '1', '0', '0', '0'),
+('31611', '37220', '0', '1', '1', '1', '0', '0', '0'),
+('31611', '37222', '0', '1', '1', '1', '0', '0', '0'),
+-- Azjol-Nerub::Anubarak
+('31610', '41796', '7', '0', '1', '1', '0', '0', '0'),
+('31610', '37232', '0', '1', '1', '1', '0', '0', '0'),
+('31610', '37242', '0', '2', '1', '1', '0', '0', '0'),
+('31610', '37238', '0', '2', '1', '1', '0', '0', '0'),
+('31610', '37241', '0', '2', '1', '1', '0', '0', '0'),
+('31610', '37236', '0', '1', '1', '1', '0', '0', '0'),
+('31610', '37235', '0', '1', '1', '1', '0', '0', '0'),
+('31610', '37237', '0', '1', '1', '1', '0', '0', '0'),
+('31610', '37240', '0', '2', '1', '1', '0', '0', '0'),
+('31610', '43102', '0', '3', '1', '1', '0', '0', '0'),
+-- Azjol Nerub
+('31612', '40752', '100', '0', '1', '1', '0', '0', '0'),
+('31611', '40752', '100', '0', '1', '1', '0', '0', '0'),
+('31610', '40752', '100', '0', '1', '1', '0', '0', '0');
 
--- Azjol-Nerub::Hadronox hero loot id 31611
-UPDATE creature_template SET `lootid` = '31611' WHERE `entry` IN (31611);
-INSERT INTO `creature_loot_template` VALUES ('31611', '43852', '2', '0', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31611', '37221', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31611', '37230', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31611', '37220', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31611', '37222', '0', '1', '1', '1', '0', '0', '0');
-
--- Azjol-Nerub::Anubarak hero loot id 31610
-UPDATE creature_template SET `lootid` = '31610' WHERE `entry` IN (31610);
-INSERT INTO `creature_loot_template` VALUES ('31610', '41796', '7', '0', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37232', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37242', '0', '2', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37238', '0', '2', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37241', '0', '2', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37236', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37235', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37237', '0', '1', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '37240', '0', '2', '1', '1', '0', '0', '0');
-INSERT INTO `creature_loot_template` VALUES ('31610', '43102', '0', '3', '1', '1', '0', '0', '0');
-
--- Azjol-Nerub ACID
+-- Azjol-Nerub::ACID
 
 -- Azjol Nerub Mobs
 -- NORMAL (28732,28733,28734,29062,29063,29064,29096,29097,29098,29117,29118,29128,29335,29340,29217,29216,28922);
