@@ -113,6 +113,32 @@ struct MANGOS_DLL_DECL boss_heiganAI : public ScriptedAI
             m_pInstance->SetData(TYPE_HEIGAN, DONE);
     }
 
+    void Eruption()
+    {
+        switch(m_uiEruptionCount)
+        {
+            case 0:
+                //aktywuj w  odpowiednich meisjcach chmure
+                break;
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+        }
+        if(m_uiEruptionCount == 6)
+            m_uiEruptionCount = 0;
+        else
+            ++m_uiEruptionCount; 
+    }
+
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -137,6 +163,7 @@ struct MANGOS_DLL_DECL boss_heiganAI : public ScriptedAI
             // Eruption
             if (m_uiEruptionTimer < uiDiff)
             {
+                Eruption();
                 m_uiEruptionTimer = urand(2000,3000);
             }else m_uiEruptionTimer -= uiDiff;
         }
@@ -173,28 +200,7 @@ struct MANGOS_DLL_DECL boss_heiganAI : public ScriptedAI
             // Eruption
             if (m_uiEruptionTimer < uiDiff)
             {
-                switch(m_uiEruptionCount)
-                {
-                    case 0:
-                        //aktywuj w  odpowiednich meisjcach chmure
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        break;
-                    case 3:
-                        break;
-                    case 4:
-                        break;
-                    case 5:
-                        break;
-                    case 6:
-                        break;
-                }
-                if(m_uiEruptionCount == 6)
-                    m_uiEruptionCount = 0;
-                else
-                    ++m_uiEruptionCount;
+                Eruption();
                 m_uiEruptionTimer = urand(7000,9000);
             }else m_uiEruptionTimer -= uiDiff;
 
@@ -203,9 +209,39 @@ struct MANGOS_DLL_DECL boss_heiganAI : public ScriptedAI
     }
 };
 
+struct MANGOS_DLL_DECL mob_eruptiontriggerAI : public Scripted_NoMovementAI
+{
+    mob_eruptiontriggerAI(Creature *c) : Scripted_NoMovementAI(c) { Reset(); }
+ 
+    uint32 m_uiEruptionTimer;
+
+    void Reset()
+    {
+        m_uiEruptionTimer = 2000;
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiEruptionTimer < uiDiff)
+        {
+            if(m_creature->getVictim())
+                m_creature->CastSpell(m_creature->getVictim(), SPELL_ERUPTION, false);
+            m_uiEruptionTimer = 1000;
+        }else m_uiEruptionTimer -= uiDiff;
+    }
+};
+
 CreatureAI* GetAI_boss_heigan(Creature* pCreature)
 {
     return new boss_heiganAI(pCreature);
+}
+
+CreatureAI* GetAI_mob_eruptiontrigger(Creature* pCreature)
+{
+    return new mob_eruptiontriggerAI(pCreature);
 }
 
 void AddSC_boss_heigan()
@@ -214,5 +250,10 @@ void AddSC_boss_heigan()
     NewScript = new Script;
     NewScript->Name = "boss_heigan";
     NewScript->GetAI = &GetAI_boss_heigan;
+    NewScript->RegisterSelf();
+
+    NewScript = new Script;
+    NewScript->Name = "mob_eruptiontrigger";
+    NewScript->GetAI = &GetAI_mob_eruptiontrigger;
     NewScript->RegisterSelf();
 }
