@@ -25,7 +25,6 @@ EndScriptData */
 /*
 event  = pojawiaja sie  na ziemi animacje  ktore  po chwili beda zadawaly w huj dmg  raid musi biegac  na  okolo "dance"
 w drugiej fazie  jest szybciej :D
-
 */
 
 #include "precompiled.h"
