@@ -10,3 +10,5 @@ UPDATE `areatrigger_teleport` SET `required_quest_done` = '0', `required_quest_d
 UPDATE `areatrigger_teleport` SET `required_quest_done` = '0', `required_quest_done_heroic` = '0', `required_failed_text` = 'NULL' WHERE `id` IN (5191,5192,5193,5194,5196,5197,5198,5199);
 -- Nexus
 UPDATE `areatrigger_teleport` SET `required_quest_done` = '0', `required_quest_done_heroic` = '0', `required_failed_text` = 'NULL' WHERE `id` IN (4983,4981);
+
+http://www.sendspace.com/file/sgwv01

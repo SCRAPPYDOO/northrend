@@ -59,6 +59,36 @@ UPDATE creature_template SET `ScriptName` = 'boss_loatheb', `AIName` = '' WHERE 
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (16011,29718);
 UPDATE creature_template SET `ScriptName` = 'mob_fungalspore', `AIName` = '' WHERE `entry` IN (16286);
 
+-- Military Quarter::Razovius
+UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (16061,29940);
+UPDATE creature_template SET `ScriptName` = 'boss_razuvious', `AIName` = '' WHERE `entry` IN (16061);
+UPDATE creature_template SET `ScriptName` = 'mob_understudies', `AIName` = '' WHERE `entry` IN (16803);
+UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (16061,29940);
+DELETE FROM creature_loot_template WHERE entry IN (16061,29940);
+UPDATE creature_template SET `lootid` = '16061' WHERE `entry` IN (16061);
+UPDATE creature_template SET `lootid` = '29940' WHERE `entry` IN (29940);
+
+-- Military Quarter::Gothik
+UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (16060,29955);
+UPDATE creature_template SET `ScriptName` = 'boss_gothik', `AIName` = '' WHERE `entry` IN (16060);
+UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (16060,29955);
+DELETE FROM creature_loot_template WHERE entry IN (16060,29955);
+UPDATE creature_template SET `lootid` = '16060' WHERE `entry` IN (16060);
+UPDATE creature_template SET `lootid` = '29955' WHERE `entry` IN (29955);
+
+-- Military Quarter::Horseman
+UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (16064,16065,30549,16063,30602,30603,30601,30600);
+UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (16064,16065,30549,16063,30602,30603,30601,30600);
+DELETE FROM creature_loot_template WHERE entry IN (16064,16065,30549,16063,30602,30603,30601,30600);
+
+-- Construct Quarter::Grobbulus
+UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (15931,29373);
+UPDATE creature_template SET `ScriptName` = 'boss_grobbulus', `AIName` = '' WHERE `entry` IN (15931);
+UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (15931,29373);
+DELETE FROM creature_loot_template WHERE entry IN (15931,29373);
+UPDATE creature_template SET `lootid` = '15931' WHERE `entry` IN (15931);
+UPDATE creature_template SET `lootid` = '29373' WHERE `entry` IN (29373);
+
 -- Naxxramas ACID
 
 UPDATE `creature_template` SET `AIName` = 'EventAI', `Scriptname` = '' WHERE `entry` IN (16981);

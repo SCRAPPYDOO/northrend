@@ -53,6 +53,8 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
     uint64 m_uiAnubRekhanGUID;
     uint64 m_uiFaerlinanGUID;
 
+    uint64 m_uiRazoviusGUID;
+
     uint64 m_uiZeliekGUID;
     uint64 m_uiThaneGUID;
     uint64 m_uiBlaumeuxGUID;
@@ -109,6 +111,8 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         m_uiAnubRekhanGUID      = 0;
         m_uiFaerlinanGUID       = 0;
 
+        m_uiRazoviusGUID        = 0;
+
         m_uiZeliekGUID          = 0;
         m_uiThaneGUID           = 0;
         m_uiBlaumeuxGUID        = 0;
@@ -157,6 +161,7 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
             case NPC_THANE:       m_uiThaneGUID = pCreature->GetGUID();      break;
             case NPC_BLAUMEUX:    m_uiBlaumeuxGUID = pCreature->GetGUID();   break;
             case NPC_RIVENDARE:   m_uiRivendareGUID = pCreature->GetGUID();  break;
+            case NPC_RAZUVIOUS:   m_uiRazoviusGUID = pCreature->GetGUID();   break;
         }
     }
 
@@ -236,17 +241,15 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 //Not added yet, gates are closed
             case GO_MILI_GOTH_ENTRY_GATE:
                 m_uiGothikEntryDoorGUID = pGo->GetGUID();
-                pGo->SetGoState(GO_STATE_READY);
                 break;
             case GO_MILI_GOTH_EXIT_GATE:
                 m_uiGothikExitDoorGUID = pGo->GetGUID();
+                pGo->SetGoState(GO_STATE_READY);
                 if (m_auiEncounter[7] == DONE)
                     pGo->SetGoState(GO_STATE_ACTIVE);
-                pGo->SetGoState(GO_STATE_READY);
                 break;
             case GO_MILI_GOTH_COMBAT_GATE:
                 m_uiGothCombatGateGUID = pGo->GetGUID();
-                pGo->SetGoState(GO_STATE_READY);
                 break;
             case GO_MILI_HORSEMEN_DOOR:
                 m_uiHorsemenDoorGUID  = pGo->GetGUID();
@@ -394,12 +397,15 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 break;
             case TYPE_GOTHIK:
                 m_auiEncounter[7] = uiData;
-                DoUseDoorOrButton(m_uiGothikEntryDoorGUID);
+                if (uiData == DONE || uiData == NOT_STARTED || uiData == IN_PROGRESS)
+                    DoUseDoorOrButton(m_uiGothikEntryDoorGUID);
                 if (uiData == DONE)
                 {
                      DoUseDoorOrButton(m_uiGothikExitDoorGUID);
                      DoUseDoorOrButton(m_uiHorsemenDoorGUID);
                 }
+                if (uiData == SPECIAL)
+                    DoUseDoorOrButton(m_uiGothCombatGateGUID);
                 break;
             case TYPE_FOUR_HORSEMEN:
                 m_auiEncounter[8] = uiData;
@@ -444,6 +450,9 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
             case TYPE_KELTHUZAD:
                 m_auiEncounter[14] = uiData;
                 break;
+            case TYPE_UNDERSTUDIES:
+                m_auiEncounter[15] = uiData;
+                break;
         }
 
         if (uiData == DONE)
@@ -455,7 +464,7 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5] << " "
                 << m_auiEncounter[6] << " " << m_auiEncounter[7] << " " << m_auiEncounter[8] << " "
                 << m_auiEncounter[9] << " " << m_auiEncounter[10] << " " << m_auiEncounter[11] << " "
-                << m_auiEncounter[12] << " " << m_auiEncounter[13] << " " << m_auiEncounter[14];
+                << m_auiEncounter[12] << " " << m_auiEncounter[13] << " " << m_auiEncounter[14] << " " << m_auiEncounter[15];
 
             strInstData = saveStream.str();
 
@@ -528,6 +537,8 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 return m_auiEncounter[13];
             case TYPE_KELTHUZAD:
                 return m_auiEncounter[14];
+            case TYPE_UNDERSTUDIES:
+                return m_auiEncounter[15];
         }
         return 0;
     }
@@ -556,6 +567,8 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 return m_uiStalaggGUID;
             case NPC_FEUGEN:
                 return m_uiFeugenGUID;
+            case TYPE_RAZUVIOUS:
+                return m_uiRazoviusGUID;
         }
         return 0;
     }
