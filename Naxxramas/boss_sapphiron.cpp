@@ -60,6 +60,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 	bool m_bIsBerserk;
 	bool m_bIsLandOff;
 
+    uint32 m_uiBreathTimer;
 	uint32 m_uiTailSweepTimer;
 	uint32 m_uiCleveTimer;
 	uint32 m_uiIceboltTimer;
@@ -117,7 +118,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 			if (m_uiFlyTimer < uiDiff)
 			{
 				m_uiIceboltTimer = 5000;
+                m_uiBreathTimer  = 18000;
 				m_uiIceboltCount = 0;
+                m_bIsLandOff     = false;
 				++m_uiPhase;
 				return;
 			}else m_uiFlyTimer -= uiDiff;
@@ -169,24 +172,27 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 			m_creature->GetMotionMaster()->Clear();
 			m_creature->GetMotionMaster()->MoveIdle();
 
-            if (m_uiIceboltTimer < uiDiff && m_uiIceboltCount < (m_bIsRegularMode ? 2 : 3))
+            if (!m_bIsLandOff)
             {
-				//dmg incorrect ?
-                if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
-                    m_creature->CastSpell(pPlayer, SPELL_ICEBOLT, false);
+                if (m_uiIceboltTimer < uiDiff && m_uiIceboltCount < (m_bIsRegularMode ? 2 : 3))
+                {
+				    //dmg incorrect ?
+                    if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                        m_creature->CastSpell(pPlayer, SPELL_ICEBOLT, false);
 
-                ++m_uiIceboltCount;
-                m_uiIceboltTimer = 6000;
-            }else m_uiIceboltTimer -= uiDiff;
+                    ++m_uiIceboltCount;
+                    m_uiIceboltTimer = 6000;
+                }else m_uiIceboltTimer -= uiDiff;
 
-			if (!m_bIsLandOff && m_uiIceboltCount > (m_bIsRegularMode ? 1 : 2))
-            {
-				DoScriptText(EMOTE_BREATH, m_creature);
-				if (m_creature->getVictim())
-					m_creature->CastSpell(m_creature->getVictim(), SPELL_FROST_BREATH, false);
-				m_uiLandTimer = 2000;
-				m_bIsLandOff = true;
-				return;
+			    if (m_uiBreathTimer < uiDiff)
+                {
+				    DoScriptText(EMOTE_BREATH, m_creature);
+				    if (m_creature->getVictim())
+					    m_creature->CastSpell(m_creature->getVictim(), SPELL_FROST_BREATH, false);
+				    m_uiLandTimer = 2000;
+				    m_bIsLandOff = true;
+				    return;
+                }else m_uiBreathTimer;
             }
 
             if (m_bIsLandOff)
@@ -206,7 +212,6 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 					m_uiFlyTimer = 45000;
 
 					//Rest Phase2
-					m_bIsLandOff = false;
 					m_uiPhase = 1;
 					return;
                 }else m_uiLandTimer -= uiDiff;
