@@ -276,9 +276,9 @@ struct MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
                 break;
             case GO_CONS_THAD_DOOR:
                 m_uiThadDoorGUID = pGo->GetGUID();
-                if (m_auiEncounter[11] == DONE)
+                //if (m_auiEncounter[11] == DONE)
                     pGo->SetGoState(GO_STATE_ACTIVE);
-                pGo->SetGoState(GO_STATE_READY);
+                //pGo->SetGoState(GO_STATE_READY);
                 break;
 
             case GO_KELTHUZAD_WATERFALL_DOOR:

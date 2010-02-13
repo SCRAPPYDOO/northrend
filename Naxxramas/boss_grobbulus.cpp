@@ -22,6 +22,11 @@ SDCategory: Naxxramas
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
 
+/* ToDo
+Poison Cliud
+Fallout Slime
+*/
+
 #include "precompiled.h"
 #include "naxxramas.h"
 
@@ -53,15 +58,15 @@ struct MANGOS_DLL_DECL boss_grobbulusAI : public ScriptedAI
     uint32 m_uiSlimeSprayTimer;
     uint32 m_uiPoisonCloudTimer;
     uint32 m_uiMutatingTimer;
-    uint8 m_uiMutatingCount;
+    uint8  m_uiMutatingCount;
 
     void Reset()
     {
-        m_bIsBerserk = false;
-        m_uiMutatingCount = 0;
-        m_uiMutatingTimer   = 20000;
+        m_bIsBerserk         = false;
+        m_uiMutatingCount    = 0;
+        m_uiMutatingTimer    = 20000;
         m_uiBerserkTimer     = 720000;
-        m_uiSlimeSprayTimer = 10000;
+        m_uiSlimeSprayTimer  = 10000;
         m_uiPoisonCloudTimer = 15000;                      
     }   
 
@@ -71,6 +76,11 @@ struct MANGOS_DLL_DECL boss_grobbulusAI : public ScriptedAI
 
     void JustDied(Unit* Killer) {}
 
+    void JustSummoned(Creature* pSumoned)
+    {
+        pSumoned->AI()->AttackStart(pSumoned->getVictim());
+    }
+
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -79,20 +89,22 @@ struct MANGOS_DLL_DECL boss_grobbulusAI : public ScriptedAI
         if (!m_bIsBerserk && m_uiBerserkTimer < uiDiff)
         {
             DoCast(m_creature, SPELL_BERSERK);
-            m_uiBerserkTimer = 30000;
             m_bIsBerserk = true;
         }else m_uiBerserkTimer -= uiDiff;
 
         if (m_uiPoisonCloudTimer < uiDiff)
         {
-            m_creature->CastSpell(m_creature, SPELL_POISON_CLOUD, false);
+            m_creature->CastSpell(m_creature, SPELL_POISON_CLOUD, true);
             m_uiPoisonCloudTimer = 15000;
         }else m_uiPoisonCloudTimer -= uiDiff;
 
         if (m_uiSlimeSprayTimer < uiDiff)
         {
             if(m_creature->getVictim())
+            {
                 m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_SLIME_SPRAY : SPELL_SLIME_SPRAY_H, false);
+                m_creature->CastSpell(m_creature->getVictim(), SPELL_POISON_CLOUD, true);
+            }
             m_uiSlimeSprayTimer = urand(10000,14000);
         }else m_uiSlimeSprayTimer -= uiDiff;
 

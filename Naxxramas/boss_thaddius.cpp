@@ -17,9 +17,18 @@
 /* ScriptData
 SDName: Boss_Thaddius
 SD%Complete: 50
-SDComment: Placeholder. Includes Feugen & Stalagg.
+SDComment: Dev Phase
 SDCategory: Naxxramas
 EndScriptData */
+
+/* ToDo
+Bosy mozna bic tylko na ich platformach musimy sprawdzac  czy bos zanjduje sie  blisko rozdzki jezeli nie testla coil -> dla wsyztkich 3 bosow
+ogolne sprawdzenie wsyztkich speli
+maski i inne duperele
+
+Spele addow  dzialaja - > do sprawdzenia  hp event
++ sprawdzanie zasiegu od meisjca spawnu
+*/
 
 #include "precompiled.h"
 #include "naxxramas.h"
@@ -60,7 +69,7 @@ enum
     SPELL_CHARGE_POSITIVE_NEARDMG = 28059,
     SPELL_CHARGE_NEGATIVE_DMGBUFF = 29660,
     SPELL_CHARGE_NEGATIVE_NEARDMG = 28084,
-    SPELL_BERSERK                  = 26662,
+    SPELL_BERSERK                 = 26662,
     SPELL_POLARITYSHIFT           = 28089,
     SPELL_BALL_LIGHTING           = 28299,
     SPELL_CHAIN_LIGHTNING         = 28167,
@@ -409,7 +418,6 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
 
     ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
-    bool m_bIsStaticField;
     bool m_bIsHPEvent;
     bool m_bIsReset;
     bool m_bIsEventNow;
@@ -424,7 +432,6 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
         m_bIsEventNow       = true;
         m_bIsReset          = false;
         m_bIsHPEvent        = false;
-        m_bIsStaticField    = false;
         m_uiOutOfRangeTimer = 1000;
         m_uiResetTimer      = 10000;
         m_uiStaticFieldTimer= 3000;
@@ -498,10 +505,9 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
             m_uiOutOfRangeTimer= 1000;
         }else m_uiOutOfRangeTimer -= uiDiff;
 
-        if (!m_bIsStaticField && m_uiStaticFieldTimer < uiDiff)
+        if (m_uiStaticFieldTimer < uiDiff)
         {
             m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_STATICFIELD : SPELL_STATICFIELD_H, false);
-            m_bIsStaticField = true;
             m_uiStaticFieldTimer = 3000;
         }else m_uiStaticFieldTimer -= uiDiff;
 
