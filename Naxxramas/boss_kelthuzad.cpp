@@ -74,8 +74,12 @@ enum
 
     SPELL_CHAINS_OF_KELTHUZAD = 28410, //28408, //dev //casted spell should be 28408. Also as of 303, heroic only
 	SPELL_MANA_DETONATION     = 27819,
+    SPELL_MANA_DETONATIONDMG  = 37158,
     SPELL_SHADOW_FISURE       = 27810,
     SPELL_FROST_BLAST         = 27808,
+
+    //shadow fissure spells
+    SPELL_VOIDBLAST           = 27812, //100k near aoe ;D
 
 	CREATURE_ICECROWN_GUARDIAN = 16441, //2 or 4
 	CREATURE_SOLDIER		   = 16427, //71
@@ -173,17 +177,20 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-        m_uiFrostBoltTimer			= urand(1000, 600000);             
+        m_uiFrostBoltTimer			= urand(1000, 10000);             
         m_uiFrostBoltNovaTimer		= 15000;                      
         m_uiChainsOfKelthuzadTimer	= urand(30000, 60000);      
         m_uiManaDetonationTimer		= 20000;                       
         m_uiShadowFisureTimer		= 25000;                       
         m_uiFrostBlastTimer			= urand(30000, 60000);  
-		m_uiPhaseTimer				= 228000;	
+		m_uiPhaseTimer				= 10000, //228000;	
 		m_uiPhase					= 1;
 		m_uiDialogTimer				= 5000;
 		m_uiDialogCount				= 0;
 		m_uiAddsTimer				= 5000;
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_KELTHUZAD, NOT_STARTED);
     }
 
     void KilledUnit(Unit* pVictim)
@@ -201,12 +208,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
     void Aggro(Unit* pWho)
     {
-        switch(urand(0, 2))
-        {
-            case 0: DoScriptText(SAY_AGGRO1, m_creature); break;
-            case 1: DoScriptText(SAY_AGGRO2, m_creature); break;
-            case 2: DoScriptText(SAY_AGGRO3, m_creature); break;
-        }
+        DoScriptText(SAY_SUMMON_MINIONS, m_creature);
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_KELTHUZAD, IN_PROGRESS);
@@ -217,7 +219,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 		//Intro Dialog
         if (m_pInstance && m_pInstance->GetData(TYPE_SAPPHIRON) == DONE)
         { 
-			if (m_uiDialogCount > 5)
+			if (m_uiDialogCount < 6)
 			{
 				if (m_uiDialogTimer < uiDiff)
 				{
@@ -244,17 +246,17 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 			m_creature->StopMoving();
 			m_creature->GetMotionMaster()->Clear();
 			m_creature->GetMotionMaster()->MoveIdle();
-
+/*
 			if (m_uiAddsTimer < uiDiff)
 			{
-				uint32 ID = CREATURE_SOLDIER;
-
 				for (uint8 i=0; i<3; ++i) //11 dev
 				{
 					if (i == 1)
 						ID = CREATURE_BANSHEE;
 					if (i == 0)
 						ID = CREATURE_ABONIAMTION;
+                    if (i > 1)
+						ID = CREATURE_SOLDIER;
 
 					Creature* pAdd = m_creature->SummonCreature(ID, m_creature->GetPositionX()+15, m_creature->GetPositionY()+15, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
 					if (pAdd)
@@ -263,11 +265,19 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 				}
 				m_uiAddsTimer = 25000;
 			}else m_uiAddsTimer -= uiDiff;
-
+*/
             if (m_uiPhaseTimer < uiDiff)
             {
+                switch(urand(0, 2))
+                {
+                    case 0: DoScriptText(SAY_AGGRO1, m_creature); break;
+                    case 1: DoScriptText(SAY_AGGRO2, m_creature); break;
+                    case 2: DoScriptText(SAY_AGGRO3, m_creature); break;
+                }
 				m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 				m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                if (m_creature->getVictim())
+                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
                 ++m_uiPhase;
             }else m_uiPhaseTimer -= uiDiff;
         }

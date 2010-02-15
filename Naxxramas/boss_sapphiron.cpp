@@ -86,6 +86,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 		m_uiFrostAuraTimer	= 2000;
 		m_uiPhase			= 1;
 		m_uiIceboltCount    = 0;
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_SAPPHIRON, NOT_STARTED);
     }
 
     void Aggro(Unit* pWho)
@@ -110,7 +113,6 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             DoScriptText(EMOTE_ENRAGE, m_creature);
             m_creature->CastSpell(m_creature, SPELL_BESERK, false);
 			m_bIsBerserk = true;
-            m_uiBeserkTimer = 300000;
         }else m_uiBeserkTimer -= uiDiff;
 
         if (m_uiPhase == 1)
@@ -121,8 +123,8 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 m_uiBreathTimer  = 18000;
 				m_uiIceboltCount = 0;
                 m_bIsLandOff     = false;
+                m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+15, m_creature->GetOrientation());
 				++m_uiPhase;
-				return;
 			}else m_uiFlyTimer -= uiDiff;
 
             if (m_uiTailSweepTimer < uiDiff)
@@ -143,7 +145,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             {
 				if (m_creature->getVictim())
 					m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_FROST_AURA : SPELL_FROST_AURA_H, false);
-                m_uiFrostAuraTimer = 2000;
+                m_uiFrostAuraTimer = 50000; //2000
             }else m_uiFrostAuraTimer -= uiDiff;
 
             if (m_uiLifeDrainTimer < uiDiff)
@@ -191,30 +193,29 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 					    m_creature->CastSpell(m_creature->getVictim(), SPELL_FROST_BREATH, false);
 				    m_uiLandTimer = 2000;
 				    m_bIsLandOff = true;
-				    return;
-                }else m_uiBreathTimer;
+                }else m_uiBreathTimer -= uiDiff;
             }
 
-            if (m_bIsLandOff)
-                if (m_uiLandTimer < uiDiff)
-                {
-                    m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
-                    m_creature->SetHover(false);
-                    m_creature->GetMotionMaster()->Clear(false);
+            if (m_bIsLandOff && m_uiLandTimer < uiDiff)
+            {
+                m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LAND);
+                m_creature->SetHover(false);
+                m_creature->GetMotionMaster()->Clear(false);
+                
+				//Timers Phase1
+				m_uiFrostAuraTimer = 2000;
+				m_uiLifeDrainTimer = 24000;
+				m_uiBlizzardTimer  = 20000;
+			    m_uiTailSweepTimer = urand(10000,15000);
+				m_uiCleveTimer	   = urand(5000,10000);
+				m_uiFlyTimer       = 45000;
+
+				//Rest Phase2
+                if (m_creature->getVictim())
                     m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
-
-					//Timers Phase1
-					m_uiFrostAuraTimer = 2000;
-					m_uiLifeDrainTimer = 24000;
-					m_uiBlizzardTimer = 20000;
-				    m_uiTailSweepTimer  = urand(10000,15000);
-					m_uiCleveTimer		= urand(5000,10000);
-					m_uiFlyTimer = 45000;
-
-					//Rest Phase2
-					m_uiPhase = 1;
-					return;
-                }else m_uiLandTimer -= uiDiff;
+				--m_uiPhase;
+				return;
+            }else m_uiLandTimer -= uiDiff;
         }
     }
 };
