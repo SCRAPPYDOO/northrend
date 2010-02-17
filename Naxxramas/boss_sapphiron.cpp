@@ -43,7 +43,9 @@ enum
     SPELL_BLIZZARD     = 28560, //28547,
 	SPELL_TAIL_SWEEP   = 55697,
 	SPELL_CLEAVE	   = 19983,
-    SPELL_BESERK       = 26662
+    SPELL_BESERK       = 26662,
+
+    SPELL_ICEBLOCK     = 44867,
 };
 
 struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
@@ -60,6 +62,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 	bool m_bIsBerserk;
 	bool m_bIsLandOff;
 
+    uint64 m_uiStunedPlayerGUID[3];
     uint32 m_uiBreathTimer;
 	uint32 m_uiTailSweepTimer;
 	uint32 m_uiCleveTimer;
@@ -87,6 +90,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 		m_uiPhase			= 1;
 		m_uiIceboltCount    = 0;
 
+        for (uint8 i=0; i<3; ++i)
+            m_uiStunedPlayerGUID[i] = 0;
+
         if (m_pInstance)
             m_pInstance->SetData(TYPE_SAPPHIRON, NOT_STARTED);
     }
@@ -101,6 +107,28 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
     {
         if (m_pInstance)
             m_pInstance->SetData(TYPE_SAPPHIRON, DONE);
+    }
+
+    void DamageDeal(Unit* pDoneTo, uint32& uiDamage) 
+    {
+        if (m_uiPhase == 2)
+        {
+            if (pDoneTo->HasAura(SPELL_ICEBOLT))
+                uiDamage = 0;
+            else if (PlayerIsBehindIceWall(pDoneTo))
+                uiDamage = 0;
+        }
+    }
+
+    bool PlayerIsBehindIceWall(Unit* pPlayer)
+    {
+        for(uint8 i=0; i<m_uiIceboltCount; ++i)
+        {
+            Unit* pFrozenPlayer = Unit::GetUnit(*m_creature, m_uiStunedPlayerGUID[0]);
+            if (pFrozenPlayer && pFrozenPlayer->HasAura(SPELL_ICEBOLT) && pFrozenPlayer->isAlive() && pFrozenPlayer->IsWithinDistInMap(pPlayer, 8))
+                return true; 
+        }
+        return false;
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -124,7 +152,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 				m_uiIceboltCount = 0;
                 m_bIsLandOff     = false;
                 m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+15, m_creature->GetOrientation());
-				++m_uiPhase;
+                ++m_uiPhase;
 			}else m_uiFlyTimer -= uiDiff;
 
             if (m_uiTailSweepTimer < uiDiff)
@@ -180,7 +208,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 {
 				    //dmg incorrect ?
                     if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                    {
+                        m_uiStunedPlayerGUID[m_uiIceboltCount] = pPlayer->GetGUID();
                         m_creature->CastSpell(pPlayer, SPELL_ICEBOLT, false);
+                    }
 
                     ++m_uiIceboltCount;
                     m_uiIceboltTimer = 6000;

@@ -113,23 +113,24 @@ UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry`
 DELETE FROM creature_loot_template WHERE entry IN (15990,30061);
 UPDATE creature_template SET `lootid` = '15931' WHERE `entry` IN (15990);
 UPDATE creature_template SET `lootid` = '29373' WHERE `entry` IN (30061);
-
+-- Kheltuzad Shadow Fissure
+UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_shadowfissure', `minlevel` = '81', `maxlevel` = '81', `faction_A` = '14', `faction_H` = '14' WHERE `entry` IN (16129);
 
 -- Naxxramas ACID
 
 UPDATE `creature_template` SET `AIName` = 'EventAI', `Scriptname` = '' WHERE `entry` IN (16981,16363);
 -- DELETE EventAIScripts
-DELETE FROM creature_ai_scripts WHERE creature_id IN (16981,16363);
+DELETE FROM `creature_ai_scripts` WHERE `creature_id` IN (16981,16363);
 INSERT INTO `creature_ai_scripts`
 (`id`, `creature_id`, `event_type`, `event_inverse_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`,
  `action1_type`, `action1_param1`, `action1_param2`, `action1_param3`, `action2_type`, `action2_param1`, `action2_param2`, `action2_param3`, `action3_type`, `action3_param1`, `action3_param2`, `action3_param3`, `comment`) 
 VALUES
+
 -- Plagued Guardian
 (1698101, '16981', '0', '0', '100', '3', '5000', '15000','5000','10000', '11', '54890', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Plagued Guardian - Cast Explosion (Normal)'),
 (1698102, '16981', '0', '0', '100', '5', '5000', '15000','5000','10000', '11', '54891', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Plagued Guardian - Cast Explosion (Heroic)'),
 -- Grobulus Poison Cloud
-(1636301, '16363', '0', '0', '100', '7', '500', '500','3500','3500', '11', '28137', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Poison Cloud - Cast AOE Cloud');
-
+(1636301, '16363', '0', '0', '100', '7', '500', '500','3500','3500', '11', '28137', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 'Poison Cloud - Cast AOE Cloud'),
 
 -- NAXXRAMAS LOOT
 

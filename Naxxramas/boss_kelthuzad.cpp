@@ -16,11 +16,16 @@
 
 /* ScriptData
 SDName: Boss_KelThuzud
-SD%Complete: 50
+SD%Complete: 80
 SDComment:
 SDCategory: Naxxramas
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
+
+/* To Do
+Support dla spela  Summon Shadow Fissure
+Support dla Spela Chain of Kheltuzad
+*/
 
 #include "precompiled.h"
 #include "naxxramas.h"
@@ -76,6 +81,7 @@ enum
 	SPELL_MANA_DETONATION     = 27819,
     SPELL_MANA_DETONATIONDMG  = 37158,
     SPELL_SHADOW_FISURE       = 27810,
+    SPELL_ARCANE_FORM         = 48019,
     SPELL_FROST_BLAST         = 27808,
 
     //shadow fissure spells
@@ -85,68 +91,18 @@ enum
 	CREATURE_SOLDIER		   = 16427, //71
 	CREATURE_ABONIAMTION	   = 16428, //8
 	CREATURE_BANSHEE		   = 16429, //8
+    CREATURE_SHADOW_FISSURE    = 16129,
 };
 
-//Positional defines
-#define ADDX_LEFT_FAR               3783.272705
-#define ADDY_LEFT_FAR               -5062.697266
-#define ADDZ_LEFT_FAR               143.711203
-#define ADDO_LEFT_FAR               3.617599
-
-#define ADDX_LEFT_MIDDLE            3730.291260
-#define ADDY_LEFT_MIDDLE            -5027.239258
-#define ADDZ_LEFT_MIDDLE            143.956909
-#define ADDO_LEFT_MIDDLE            4.461900
-
-#define ADDX_LEFT_NEAR              3683.868652
-#define ADDY_LEFT_NEAR              -5057.281250
-#define ADDZ_LEFT_NEAR              143.183884
-#define ADDO_LEFT_NEAR              5.237086
-
-#define ADDX_RIGHT_FAR              3759.355225
-#define ADDY_RIGHT_FAR              -5174.128418
-#define ADDZ_RIGHT_FAR              143.802383
-#define ADDO_RIGHT_FAR              2.170104
-
-#define ADDX_RIGHT_MIDDLE           370.724365
-#define ADDY_RIGHT_MIDDLE           -5185.123047
-#define ADDZ_RIGHT_MIDDLE           143.928024
-#define ADDO_RIGHT_MIDDLE           1.309310
-
-#define ADDX_RIGHT_NEAR             3665.121094
-#define ADDY_RIGHT_NEAR             -5138.679199
-#define ADDZ_RIGHT_NEAR             143.183212
-#define ADDO_RIGHT_NEAR             0.604023
-
-#define WALKX_LEFT_FAR              3754.431396
-#define WALKY_LEFT_FAR              -5080.727734
-#define WALKZ_LEFT_FAR              142.036316
-#define WALKO_LEFT_FAR              3.736189
-
-#define WALKX_LEFT_MIDDLE           3724.396484
-#define WALKY_LEFT_MIDDLE           -5061.330566
-#define WALKZ_LEFT_MIDDLE           142.032700
-#define WALKO_LEFT_MIDDLE           4.564785
-
-#define WALKX_LEFT_NEAR             3687.158424
-#define WALKY_LEFT_NEAR             -5076.834473
-#define WALKZ_LEFT_NEAR             142.017319
-#define WALKO_LEFT_NEAR             5.237086
-
-#define WALKX_RIGHT_FAR             3687.571777
-#define WALKY_RIGHT_FAR             -5126.831055
-#define WALKZ_RIGHT_FAR             142.017807
-#define WALKO_RIGHT_FAR             0.604023
-
-#define WALKX_RIGHT_MIDDLE          3707.990733
-#define WALKY_RIGHT_MIDDLE          -5151.450195
-#define WALKZ_RIGHT_MIDDLE          142.032562
-#define WALKO_RIGHT_MIDDLE          1.376855
-
-#define WALKX_RIGHT_NEAR            3739.500000
-#define WALKY_RIGHT_NEAR            -5141.883989
-#define WALKZ_RIGHT_NEAR            142.0141130
-#define WALKO_RIGHT_NEAR            2.121412
+double fSpawnCoords[6][4] =
+{
+    {3783.272,-5062.697,143.711},
+    {3730.291,-5027.239,143.956},
+    {3683.868,-5057.281,143.183},
+    {3759.355,-5174.128,143.802},
+    {3700.724,-5185.123,143.928},
+    {3665.121,-5138.679,143.183},
+};
 
 struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 {
@@ -159,7 +115,11 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
     ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
+    bool m_bIsDetonate;
+    bool m_bIsAnswer;
 
+    uint32 m_uiAnswerTimer;
+    uint32 m_uiDetonateTimer;
     uint32 m_uiFrostBoltTimer;
     uint32 m_uiFrostBoltNovaTimer;
     uint32 m_uiChainsOfKelthuzadTimer;
@@ -171,23 +131,30 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 	uint32 m_uiDialogTimer;
 	uint8  m_uiDialogCount;
 	uint32 m_uiAddsTimer;
+    uint64 m_uiManaTargetGUID;
 
     void Reset()
     {
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
+        m_bIsDetonate               = false;
+        m_bIsAnswer                 = true;
+
+        m_uiAnswerTimer             = 5000;
+        m_uiDetonateTimer           = 5000;
+        m_uiManaTargetGUID          = 0;
         m_uiFrostBoltTimer			= urand(1000, 10000);             
         m_uiFrostBoltNovaTimer		= 15000;                      
         m_uiChainsOfKelthuzadTimer	= urand(30000, 60000);      
         m_uiManaDetonationTimer		= 20000;                       
         m_uiShadowFisureTimer		= 25000;                       
         m_uiFrostBlastTimer			= urand(30000, 60000);  
-		m_uiPhaseTimer				= 10000, //228000;	
+		m_uiPhaseTimer				= 228000;	
 		m_uiPhase					= 1;
 		m_uiDialogTimer				= 5000;
 		m_uiDialogCount				= 0;
-		m_uiAddsTimer				= 5000;
+		m_uiAddsTimer				= 1000;
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_KELTHUZAD, NOT_STARTED);
@@ -241,15 +208,25 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
+        if (m_bIsDetonate && m_uiDetonateTimer < uiDiff)
+        {
+            Unit* pPlayer = Unit::GetUnit(*m_creature, m_uiManaTargetGUID);
+            if (pPlayer && pPlayer->isAlive())
+                pPlayer->CastSpell(pPlayer, SPELL_MANA_DETONATIONDMG, true);       
+            m_bIsDetonate      = false;
+            m_uiManaTargetGUID = 0;
+        }else m_uiDetonateTimer -= uiDiff;
+
         if (m_uiPhase == 1)
         {
 			m_creature->StopMoving();
 			m_creature->GetMotionMaster()->Clear();
 			m_creature->GetMotionMaster()->MoveIdle();
-/*
+
 			if (m_uiAddsTimer < uiDiff)
 			{
-				for (uint8 i=0; i<3; ++i) //11 dev
+                uint32 ID = 0;
+				for (uint8 i=0; i<11; ++i)
 				{
 					if (i == 1)
 						ID = CREATURE_BANSHEE;
@@ -258,14 +235,16 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                     if (i > 1)
 						ID = CREATURE_SOLDIER;
 
-					Creature* pAdd = m_creature->SummonCreature(ID, m_creature->GetPositionX()+15, m_creature->GetPositionY()+15, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
+                    uint8 m_uiRand = urand(0,5);
+
+					Creature* pAdd = m_creature->SummonCreature(ID, fSpawnCoords[m_uiRand][0], fSpawnCoords[m_uiRand][1], fSpawnCoords[m_uiRand][2], 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
 					if (pAdd)
 						if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
 							pAdd->AI()->AttackStart(pPlayer);
 				}
-				m_uiAddsTimer = 25000;
+				m_uiAddsTimer = 15000; //25000
 			}else m_uiAddsTimer -= uiDiff;
-*/
+
             if (m_uiPhaseTimer < uiDiff)
             {
                 switch(urand(0, 2))
@@ -288,10 +267,10 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 			if (m_creature->GetHealth()*100 / m_creature->GetMaxHealth() < 45 && m_uiPhase == 2)
 			{
                 DoScriptText(SAY_REQUEST_AID, m_creature);
-                //here Lich King should respond to KelThuzad but I don't know which creature to make talk
-                //so for now just make Kelthuzad says it.
-                DoScriptText(SAY_ANSWER_REQUEST, m_creature);
 
+                m_uiAnswerTimer = 5000;
+                m_bIsAnswer     = true;
+                
 				for (uint8 i=0; i<(m_bIsRegularMode ? 2 : 4); ++i)
 				{
 					Creature* pGuardian = m_creature->SummonCreature(CREATURE_ICECROWN_GUARDIAN, m_creature->GetPositionX()+15, m_creature->GetPositionY()+15, m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
@@ -301,6 +280,12 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 				}
 				++m_uiPhase;
 			}
+
+            if (m_bIsAnswer && m_uiAnswerTimer < uiDiff)
+            {
+                DoScriptText(SAY_ANSWER_REQUEST, m_creature);
+                m_bIsAnswer = false;
+            }else m_uiAnswerTimer -= uiDiff;
 
             //Check for Frost Bolt
             if (m_uiFrostBoltTimer < uiDiff)
@@ -319,13 +304,14 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             }else m_uiFrostBoltNovaTimer -= uiDiff;
 
             //Check for Chains Of Kelthuzad
-            if (m_uiChainsOfKelthuzadTimer < uiDiff)
+            if (!m_bIsRegularMode && m_uiChainsOfKelthuzadTimer < uiDiff)
             {
                 if (urand(0, 1))
                     DoScriptText(SAY_CHAIN1, m_creature);
                 else
                     DoScriptText(SAY_CHAIN2, m_creature);
 
+                //3 razy
 				DoCast(m_creature->getVictim(),SPELL_CHAINS_OF_KELTHUZAD);
 
                 m_uiChainsOfKelthuzadTimer = 90000;
@@ -337,7 +323,12 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 				if (urand(0, 1)) DoScriptText(SAY_SPECIAL1_MANA_DET, m_creature);
                     
 				if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 0))
+                {
+                    m_uiManaTargetGUID = pPlayer->GetGUID();
 					m_creature->CastSpell(pPlayer, SPELL_MANA_DETONATION, false);
+                    m_uiDetonateTimer = 5000;
+                    m_bIsDetonate     = true;
+                }
 
                 m_uiManaDetonationTimer = 30000;
             }else m_uiManaDetonationTimer -= uiDiff;
@@ -348,7 +339,9 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                 if (urand(0, 1)) DoScriptText(SAY_SPECIAL3_MANA_DET, m_creature);
 
 				if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 0))
-					m_creature->CastSpell(pPlayer, SPELL_SHADOW_FISURE, false);
+                    m_creature->SummonCreature(CREATURE_SHADOW_FISSURE, pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 7000);
+
+					//m_creature->CastSpell(pPlayer, SPELL_SHADOW_FISURE, false); //despawn time needed
 
                 m_uiShadowFisureTimer = 25000;
             }else m_uiShadowFisureTimer -= uiDiff;
@@ -357,7 +350,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
             if (m_uiFrostBlastTimer < uiDiff)
             {
                 if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 0))
-					m_creature->CastSpell(pPlayer, SPELL_FROST_BLAST, false);
+					m_creature->CastSpell(pPlayer, SPELL_FROST_BLAST, false); //need to check is this chain effect
 
                 if (urand(0, 1))
                     DoScriptText(SAY_FROST_BLAST, m_creature);
@@ -375,11 +368,50 @@ CreatureAI* GetAI_boss_kelthuzadAI(Creature* pCreature)
     return new boss_kelthuzadAI(pCreature);
 }
 
+struct MANGOS_DLL_DECL mob_shadowfissureAI : public Scripted_NoMovementAI
+{
+    mob_shadowfissureAI(Creature *c) : Scripted_NoMovementAI(c) { Reset(); }
+ 
+    bool   m_bIsVoidBlast;
+    uint32 m_uiVoidBlastTimer;        
+
+    void Reset() 
+    { 
+        DoCast(m_creature, SPELL_ARCANE_FORM, true); // missing  original visual efect
+        m_bIsVoidBlast      = false; 
+        m_uiVoidBlastTimer  = 5000; 
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (!m_bIsVoidBlast && m_uiVoidBlastTimer < uiDiff)
+        {
+            if (m_creature)
+                m_creature->CastSpell(m_creature, SPELL_VOIDBLAST, true);
+
+            m_bIsVoidBlast = true;
+        }else m_uiVoidBlastTimer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_mob_shadowfissureAI(Creature* pCreature)
+{
+    return new mob_shadowfissureAI(pCreature);
+}
+
 void AddSC_boss_kelthuzad()
 {
     Script* NewScript;
     NewScript = new Script;
     NewScript->Name = "boss_kelthuzad";
     NewScript->GetAI = &GetAI_boss_kelthuzadAI;
+    NewScript->RegisterSelf();
+
+    NewScript = new Script;
+    NewScript->Name = "mob_shadowfissure";
+    NewScript->GetAI = &GetAI_mob_shadowfissureAI;
     NewScript->RegisterSelf();
 }
