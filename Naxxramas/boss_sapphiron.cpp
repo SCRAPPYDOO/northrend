@@ -111,13 +111,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
     void DamageDeal(Unit* pDoneTo, uint32& uiDamage) 
     {
-        if (m_uiPhase == 2)
-        {
-            if (pDoneTo->HasAura(SPELL_ICEBOLT))
-                uiDamage = 0;
-            else if (PlayerIsBehindIceWall(pDoneTo))
-                uiDamage = 0;
-        }
+        if (pDoneTo->HasAura(SPELL_ICEBOLT))
+            uiDamage = 0;
+        else if (PlayerIsBehindIceWall(pDoneTo) && m_uiPhase == 2)
+            uiDamage = 0;
     }
 
     bool PlayerIsBehindIceWall(Unit* pPlayer)
@@ -147,6 +144,9 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
         {
 			if (m_uiFlyTimer < uiDiff)
 			{
+                for (uint8 i=0; i<3; ++i)
+                    m_uiStunedPlayerGUID[i] = 0;
+
 				m_uiIceboltTimer = 5000;
                 m_uiBreathTimer  = 18000;
 				m_uiIceboltCount = 0;
