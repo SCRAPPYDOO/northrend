@@ -25,6 +25,8 @@ EndScriptData */
 /* To Do
 Support dla spela  Summon Shadow Fissure
 Support dla Spela Chain of Kheltuzad
+Icecrown Guardians  hp level sprawdzic cale
+Szybkosc Ruchu addow
 */
 
 #include "precompiled.h"
