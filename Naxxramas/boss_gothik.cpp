@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Boss_Gothik
 SD%Complete: 90
-SDComment: 
+SDComment:  
 SDCategory: Naxxramas
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
@@ -56,7 +56,7 @@ uint32 m_uiUndeadList[3] =
     CREATURE_SPEC_TRAINEE, CREATURE_SPEC_DEATCHKNIGHT, CREATURE_SPEC_RIDER
 };
 
-float  fAddsPos[2][3] = 
+double  fAddsPos[2][3] = 
 {
     {2692.4526, -3420.8408, 267.688},
     {2689.0485, -3300.6027, 267.683}

@@ -22,6 +22,10 @@ SDCategory: Naxxramas
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
 
+/*ToDo
+Support for spell* 28560 soon.
+*/
+
 #include "precompiled.h"
 #include "naxxramas.h"
 
@@ -40,12 +44,14 @@ enum
 	SPELL_FROST_AURA_H = 55799,
     SPELL_LIFE_DRAIN   = 28542,
 	SPELL_LIFE_DRAIN_H = 55665,
-    SPELL_BLIZZARD     = 28560, //28547,
+    SPELL_BLIZZARD     = 28560,
+    SPELL_CHILL        = 28547, 
+    SPELL_CHILL_H      = 55699,
 	SPELL_TAIL_SWEEP   = 55697,
 	SPELL_CLEAVE	   = 19983,
     SPELL_BESERK       = 26662,
 
-    SPELL_ICEBLOCK     = 44867,
+    CREATURE_BLIZZARD  = 16474
 };
 
 struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
@@ -99,6 +105,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
     void Aggro(Unit* pWho)
     {
+        m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_FROST_AURA : SPELL_FROST_AURA_H, false);
+
+        m_creature->SetInCombatWithZone();
+
         if (m_pInstance)
             m_pInstance->SetData(TYPE_SAPPHIRON, IN_PROGRESS);
     }
@@ -147,11 +157,15 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
                 for (uint8 i=0; i<3; ++i)
                     m_uiStunedPlayerGUID[i] = 0;
 
+                m_creature->InterruptNonMeleeSpells(false);
+                m_creature->HandleEmoteCommand(EMOTE_ONESHOT_LIFTOFF);
+                m_creature->SetHover(true);
+
 				m_uiIceboltTimer = 5000;
                 m_uiBreathTimer  = 18000;
 				m_uiIceboltCount = 0;
                 m_bIsLandOff     = false;
-                m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+15, m_creature->GetOrientation());
+                m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()+20, m_creature->GetOrientation());
                 ++m_uiPhase;
 			}else m_uiFlyTimer -= uiDiff;
 
@@ -172,7 +186,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             if (m_uiFrostAuraTimer < uiDiff)
             {
 				if (m_creature->getVictim())
-					m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_FROST_AURA : SPELL_FROST_AURA_H, false);
+					//m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_FROST_AURA : SPELL_FROST_AURA_H, false);
                 m_uiFrostAuraTimer = 50000; //2000
             }else m_uiFrostAuraTimer -= uiDiff;
 
@@ -188,15 +202,17 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
             if (m_uiBlizzardTimer < uiDiff)
             {
                 if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
-                    m_creature->CastSpell(pPlayer, SPELL_BLIZZARD, false);
-
+					if (Creature* pBlizzard = m_creature->SummonCreature(CREATURE_BLIZZARD, pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 15000))
+                    {
+				        pBlizzard->AI()->AttackStart(pPlayer);
+                        pBlizzard->SetInCombatWithZone();
+                    }
                 m_uiBlizzardTimer = 20000;
             }else m_uiBlizzardTimer -= uiDiff;
 
 			DoMeleeAttackIfReady();
         }
-
-        if (m_uiPhase == 2)
+        else
         {
 			m_creature->StopMoving();
 			m_creature->GetMotionMaster()->Clear();
@@ -204,10 +220,10 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 
             if (!m_bIsLandOff)
             {
-                if (m_uiIceboltTimer < uiDiff && m_uiIceboltCount < (m_bIsRegularMode ? 2 : 3))
+                if (m_uiIceboltTimer < uiDiff && m_uiIceboltCount < (m_bIsRegularMode ? 2 : 3))  // 2 or 3
                 {
 				    //dmg incorrect ?
-                    if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM,0))
+                    if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 0))
                     {
                         m_uiStunedPlayerGUID[m_uiIceboltCount] = pPlayer->GetGUID();
                         m_creature->CastSpell(pPlayer, SPELL_ICEBOLT, false);
@@ -241,7 +257,7 @@ struct MANGOS_DLL_DECL boss_sapphironAI : public ScriptedAI
 				m_uiCleveTimer	   = urand(5000,10000);
 				m_uiFlyTimer       = 45000;
 
-				//Rest Phase2
+				//Reset Phase2
                 if (m_creature->getVictim())
                     m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
 				--m_uiPhase;
@@ -256,11 +272,52 @@ CreatureAI* GetAI_boss_sapphiron(Creature* pCreature)
     return new boss_sapphironAI(pCreature);
 }
 
+struct MANGOS_DLL_DECL mob_blizzardAI : public ScriptedAI
+{
+    mob_blizzardAI(Creature *pCreature) : ScriptedAI(pCreature)
+    {
+        m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
+        Reset();
+    }
+
+    bool   m_bIsRegularMode;
+    uint32 m_uiChillTimer;        
+
+    void Reset() 
+    { 
+        m_creature->SetVisibility(VISIBILITY_OFF);
+        m_uiChillTimer  = 1000; 
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiChillTimer < uiDiff)
+        {
+            if (m_creature->getVictim())
+                m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_CHILL : SPELL_CHILL_H, false);
+            m_uiChillTimer = 3000;
+        }else m_uiChillTimer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_mob_blizzard(Creature* pCreature)
+{
+    return new mob_blizzardAI(pCreature);
+}
+
 void AddSC_boss_sapphiron()
 {
     Script* NewScript;
     NewScript = new Script;
     NewScript->Name = "boss_sapphiron";
     NewScript->GetAI = &GetAI_boss_sapphiron;
+    NewScript->RegisterSelf();
+
+    NewScript = new Script;
+    NewScript->Name = "mob_blizzard";
+    NewScript->GetAI = &GetAI_mob_blizzard;
     NewScript->RegisterSelf();
 }

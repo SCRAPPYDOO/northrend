@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Boss_Gluth
 SD%Complete: 70
-SDComment:
+SDComment: 
 SDCategory: Naxxramas
 SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */

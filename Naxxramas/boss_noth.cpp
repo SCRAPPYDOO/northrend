@@ -51,7 +51,7 @@ enum
 };
 
 // Teleport position of Noth on his balcony
-float fBalcony[4] =
+double fBalcony[4] =
 {
     2634.1916,
     -3529.829,
@@ -184,7 +184,6 @@ struct MANGOS_DLL_DECL boss_nothAI : public ScriptedAI
                 m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 m_bIsBalconyPhase = true;
                 m_uiBalconyTimer = 70000;
-                return;
             }else m_uiBalconyTimer -= uiDiff;
 
             // Blink

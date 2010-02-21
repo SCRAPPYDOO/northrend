@@ -91,7 +91,7 @@ UPDATE creature_template SET `lootid` = '29373' WHERE `entry` IN (29373);
 -- cload id 16363 29379
 
 -- Construct Quarter::Thaddius
-UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (15928,29448);
+UPDATE creature_template SET `unit_flags` = '0' WHERE `entry` IN (15928,29448);
 UPDATE creature_template SET `ScriptName` = 'boss_thaddius', `AIName` = '' WHERE `entry` IN (15928);
 UPDATE creature_template SET `ScriptName` = 'boss_feugen', `AIName` = '' WHERE `entry` IN (15930);
 UPDATE creature_template SET `ScriptName` = 'boss_stalagg', `AIName` = '' WHERE `entry` IN (15929);
@@ -106,6 +106,8 @@ UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry`
 DELETE FROM creature_loot_template WHERE entry IN (15989,29991);
 UPDATE creature_template SET `lootid` = '15931' WHERE `entry` IN (15989);
 UPDATE creature_template SET `lootid` = '29373' WHERE `entry` IN (29991);
+-- FrostWyrmLair::Spell Blizzard
+UPDATE creature_template SET `faction_A` = '14', `faction_H` ='14', `ScriptName` = 'mob_blizzard', `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (16474);
 
 -- FrostWyrmLair::Kelthuzad
 UPDATE `creature_template` SET `unit_flags` = '0' WHERE `entry` IN (15990,30061);
@@ -113,8 +115,10 @@ UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry`
 DELETE FROM creature_loot_template WHERE entry IN (15990,30061);
 UPDATE creature_template SET `lootid` = '15931' WHERE `entry` IN (15990);
 UPDATE creature_template SET `lootid` = '29373' WHERE `entry` IN (30061);
--- Kheltuzad Shadow Fissure
+-- FrostWyrmLair::Kheltuzad Shadow Fissure Spell
 UPDATE creature_template SET `AIName` = '', `Scriptname` = 'mob_shadowfissure', `minlevel` = '81', `maxlevel` = '81', `faction_A` = '14', `faction_H` = '14' WHERE `entry` IN (16129);
+-- FrostWyrmLair::Adds Speed
+UPDATE creature_template SET `minlevel` = '80', `maxlevel` = '80', `speed` = '1' WHERE entry IN (16429,16428,16427,30015,30048,30018);
 
 -- Naxxramas ACID
 

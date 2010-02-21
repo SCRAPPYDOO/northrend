@@ -16,9 +16,10 @@
 
 /* ScriptData
 SDName: Boss_Maexxna
-SD%Complete: 60
-SDComment: this needs review, and rewrite of the webwrap ability
+SD%Complete: 90
+SDComment:
 SDCategory: Naxxramas
+SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
 
 #include "precompiled.h"
@@ -139,11 +140,7 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
 
     void DoCastWebWrap()
     {
-        uint8 PlayersCount = 2;
-        if(m_bIsRegularMode)
-            PlayersCount = 1;
-
-        for(uint8 i=0; i<PlayersCount; ++i)
+        for(uint8 i=0; i<(m_bIsRegularMode ? 2 : 4); ++i)
         {
             if(Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 1))
             {
@@ -163,14 +160,14 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
             return;
 
         if(m_bEnraged)
-            if(!m_creature->HasAura(SPELL_FRENZY))
-                DoCast(m_creature, SPELL_FRENZY);
+            if(m_bIsRegularMode ? !m_creature->HasAura(SPELL_FRENZY) : !m_creature->HasAura(H_SPELL_FRENZY))
+                DoCast(m_creature, m_bIsRegularMode ? SPELL_FRENZY : H_SPELL_FRENZY);
 
         // Web Wrap
         if (m_uiWebWrapTimer < uiDiff)
         {
             DoCastWebWrap();
-            m_uiWebWrapTimer = 40000;
+            m_uiWebWrapTimer = 30000;
         }
         else
             m_uiWebWrapTimer -= uiDiff;
@@ -180,7 +177,7 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         {
             if(m_creature->getVictim())
                 m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_WEBSPRAY : H_SPELL_WEBSPRAY, false);
-            m_uiWebSprayTimer = 41000;
+            m_uiWebSprayTimer = 25000;
         }
         else
             m_uiWebSprayTimer -= uiDiff;
@@ -200,7 +197,7 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
         {
             if(m_creature->getVictim())
                 m_creature->CastSpell(m_creature->getVictim(), m_bIsRegularMode ? SPELL_NECROTICPOISON : H_SPELL_NECROTICPOISON, false);
-            m_uiNecroticPoisonTimer = 30000;
+            m_uiNecroticPoisonTimer = 19000;
         }
         else
             m_uiNecroticPoisonTimer -= uiDiff;
@@ -222,7 +219,7 @@ struct MANGOS_DLL_DECL boss_maexxnaAI : public ScriptedAI
             if(m_creature)
                 DoCast(m_creature, SPELL_SUMMON_SPIDERLING);
                 */
-            m_uiSummonSpiderlingTimer = 40000;
+            m_uiSummonSpiderlingTimer = 31000;
         }
         else
             m_uiSummonSpiderlingTimer -= uiDiff;

@@ -93,7 +93,7 @@ enum
 	CREATURE_SOLDIER		   = 16427, //71
 	CREATURE_ABONIAMTION	   = 16428, //8
 	CREATURE_BANSHEE		   = 16429, //8
-    CREATURE_SHADOW_FISSURE    = 16129,
+    CREATURE_SHADOW_FISSURE    = 16129
 };
 
 double fSpawnCoords[6][4] =
@@ -103,7 +103,7 @@ double fSpawnCoords[6][4] =
     {3683.868,-5057.281,143.183},
     {3759.355,-5174.128,143.802},
     {3700.724,-5185.123,143.928},
-    {3665.121,-5138.679,143.183},
+    {3665.121,-5138.679,143.183}
 };
 
 struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
@@ -177,6 +177,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
 
     void Aggro(Unit* pWho)
     {
+        m_creature->SetInCombatWithZone();
         DoScriptText(SAY_SUMMON_MINIONS, m_creature);
 
         if (m_pInstance)
@@ -314,7 +315,7 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                     DoScriptText(SAY_CHAIN2, m_creature);
 
                 //3 razy
-				DoCast(m_creature->getVictim(),SPELL_CHAINS_OF_KELTHUZAD);
+				//DoCast(m_creature->getVictim(),SPELL_CHAINS_OF_KELTHUZAD);
 
                 m_uiChainsOfKelthuzadTimer = 90000;
             }else m_uiChainsOfKelthuzadTimer -= uiDiff;
@@ -341,9 +342,12 @@ struct MANGOS_DLL_DECL boss_kelthuzadAI : public ScriptedAI
                 if (urand(0, 1)) DoScriptText(SAY_SPECIAL3_MANA_DET, m_creature);
 
 				if (Unit* pPlayer = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                    m_creature->SummonCreature(CREATURE_SHADOW_FISSURE, pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 7000);
 
-					//m_creature->CastSpell(pPlayer, SPELL_SHADOW_FISURE, false); //despawn time needed
+                    if (Creature* pFisuure = m_creature->SummonCreature(CREATURE_SHADOW_FISSURE, pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 7000))
+                    {
+                        pFisuure->AI()->AttackStart(pPlayer);    
+                        pFisuure->SetInCombatWithZone();
+                    }
 
                 m_uiShadowFisureTimer = 25000;
             }else m_uiShadowFisureTimer -= uiDiff;
@@ -374,13 +378,11 @@ struct MANGOS_DLL_DECL mob_shadowfissureAI : public Scripted_NoMovementAI
 {
     mob_shadowfissureAI(Creature *c) : Scripted_NoMovementAI(c) { Reset(); }
  
-    bool   m_bIsVoidBlast;
     uint32 m_uiVoidBlastTimer;        
 
     void Reset() 
     { 
         DoCast(m_creature, SPELL_ARCANE_FORM, true); // missing  original visual efect
-        m_bIsVoidBlast      = false; 
         m_uiVoidBlastTimer  = 5000; 
     }
 
@@ -389,12 +391,11 @@ struct MANGOS_DLL_DECL mob_shadowfissureAI : public Scripted_NoMovementAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (!m_bIsVoidBlast && m_uiVoidBlastTimer < uiDiff)
+        if (m_uiVoidBlastTimer < uiDiff)
         {
             if (m_creature)
                 m_creature->CastSpell(m_creature, SPELL_VOIDBLAST, true);
-
-            m_bIsVoidBlast = true;
+            m_uiVoidBlastTimer = 15000;
         }else m_uiVoidBlastTimer -= uiDiff;
     }
 };

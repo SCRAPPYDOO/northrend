@@ -16,9 +16,10 @@
 
 /* ScriptData
 SDName: Boss_Faerlina
-SD%Complete: 50
+SD%Complete: 90
 SDComment:
 SDCategory: Naxxramas
+SDAuthor: ScrappyDoo (c) Andeeria
 EndScriptData */
 
 #include "precompiled.h"
@@ -105,7 +106,7 @@ struct MANGOS_DLL_DECL boss_faerlinaAI : public ScriptedAI
 
     void SpawnAdds()
     {
-        for(uint8 i=0; m_bIsRegularMode ? i<4 : i<6 ; ++i)
+        for(uint8 i=0; i<(m_bIsRegularMode ? 4 : 6); ++i)
         {
             uint32 ID = CREATURE_FOLLOWER;
             if(i<4)
@@ -151,21 +152,13 @@ struct MANGOS_DLL_DECL boss_faerlinaAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        //If some worshiper ar dead cast spell
         for(uint8 i=0; i<4; ++i)
         {
             Unit* Worshiper = Unit::GetUnit(*m_creature, m_uiWorshiperGUID[i]);
             if(Worshiper && !Worshiper->isAlive())
             {
-                //cheach if this spell working corectly
                 if(m_creature->HasAura(SPELL_ENRAGE))
-                {
                     m_creature->RemoveAurasDueToSpell(SPELL_ENRAGE);
-                    m_uiPoisonBoltVolleyTimer = m_uiPoisonBoltVolleyTimer + 30000;
-                    //m_creature->AddAura(SPELL_WIDOWS_EMBRANCE);
-                }
-                else 
-                    m_uiEnrageTimer = m_uiEnrageTimer + 30000;
 
                 m_uiWorshiperGUID[i] = 0;
             }

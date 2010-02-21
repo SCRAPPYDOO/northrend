@@ -16,7 +16,7 @@
 
 /* ScriptData
 SDName: Boss_Anubrekhan
-SD%Complete: 95
+SD%Complete: 90
 SDComment: Guards need acid support and db update
 SDCategory: Naxxramas
 SDAuthor: modified sd2 by ScrappyDoo (c) Andeeria
