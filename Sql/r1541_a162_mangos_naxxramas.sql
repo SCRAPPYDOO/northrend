@@ -95,6 +95,7 @@ UPDATE creature_template SET `unit_flags` = '0' WHERE `entry` IN (15928,29448);
 UPDATE creature_template SET `ScriptName` = 'boss_thaddius', `AIName` = '' WHERE `entry` IN (15928);
 UPDATE creature_template SET `ScriptName` = 'boss_feugen', `AIName` = '' WHERE `entry` IN (15930);
 UPDATE creature_template SET `ScriptName` = 'boss_stalagg', `AIName` = '' WHERE `entry` IN (15929);
+UPDATE creature_template SET `ScriptName` = 'mob_teslacoil', `AIName` = '' WHERE `entry` IN (16218);
 UPDATE creature_template SET `mechanic_immune_mask` = '1073463287' WHERE `entry` IN (15928,29448);
 DELETE FROM creature_loot_template WHERE entry IN (15928,29448);
 UPDATE creature_template SET `lootid` = '15931' WHERE `entry` IN (15928);

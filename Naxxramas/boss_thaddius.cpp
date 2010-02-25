@@ -28,6 +28,8 @@ maski i inne duperele
 
 Spele addow  dzialaja - > do sprawdzenia  hp event
 + sprawdzanie zasiegu od meisjca spawnu
+
+Sumonowane Tesla Coil na  liste  i depsawn
 */
 
 #include "precompiled.h"
@@ -79,6 +81,56 @@ enum
     CREATURE_TESLA_COIL           = 16218                   //the coils (emotes "Tesla Coil overloads!")
 };
 
+// Tesla Coil AI
+struct MANGOS_DLL_DECL mob_teslacoilAI : public Scripted_NoMovementAI
+{
+    mob_teslacoilAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature) { Reset(); }
+
+    uint64 m_uiCreatureGUID;
+    uint32 m_uiCheckRangeTimer;
+
+    void Reset()
+    {
+        m_uiCreatureGUID    = 0;
+        m_uiCheckRangeTimer = 1000;
+    }    
+
+    void SumonedBy(Unit* pCreature)
+    {
+        if(pCreature)
+            m_uiCreatureGUID = pCreature->GetGUID();
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+        
+        if (Unit* pCreature = Unit::GetUnit(*m_creature, m_uiCreatureGUID))
+        {
+            if (!pCreature ->isAlive() || !pCreature)
+            {
+                m_creature->ForcedDespawn();
+                return;
+            }
+
+            if (m_uiCheckRangeTimer < uiDiff)
+            {
+                if (pCreature->isAlive() && !m_creature->IsWithinDistInMap(pCreature, 15))
+                    if (m_creature->getVictim())
+                        m_creature->CastSpell(m_creature->getVictim(), SPELL_BALL_LIGHTING, true);
+
+                m_uiCheckRangeTimer = 2000;
+            }else m_uiCheckRangeTimer -= uiDiff;
+        }
+    }
+};
+
+CreatureAI* GetAI_mob_teslacoil(Creature* pCreature)
+{
+    return new mob_teslacoilAI(pCreature);
+}
+
 struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
 {
     boss_thaddiusAI(Creature* pCreature) : ScriptedAI(pCreature)
@@ -89,13 +141,12 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;
-    bool m_bIsRegularMode;
-    bool m_bIsBerserk;
-    bool m_bIsPolarity;
-    bool m_bIsBallLighting;
-    bool m_bIsAggro;
-
-    uint64 m_uiTeslaGUID;
+    bool   m_bIsRegularMode;
+    bool   m_bIsBerserk;
+    bool   m_bIsPolarity;
+    bool   m_bIsBallLighting;
+    bool   m_bIsAggro;
+    uint64 m_uiPlayerGUID;
     uint32 m_uiAggroTimer;
     uint32 m_uiScreamsTimer;
     uint32 m_uiPolarityDMGTimer;
@@ -106,11 +157,11 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiTeslaGUID           = 0;
         m_bIsAggro              = false;
         m_bIsBallLighting       = true;
         m_bIsPolarity           = false;
         m_bIsBerserk            = false;
+        m_uiPlayerGUID          = 0;
         m_uiAggroTimer          = 5000;
         m_uiScreamsTimer        = 40000;
         m_uiPolarityDMGTimer    = 5000;
@@ -138,8 +189,13 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
 
     void Aggro(Unit* pWho)
     {
+        m_creature->SetInCombatWithZone();
+
         if (Creature* pTeslaCoil = m_creature->SummonCreature(CREATURE_TESLA_COIL, m_creature->GetPositionX()+urand(1,4), m_creature->GetPositionY()+urand(1,4), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 1200000))
-            m_uiTeslaGUID = pTeslaCoil->GetGUID();
+        {
+            ((mob_teslacoilAI*)pTeslaCoil->AI())->SumonedBy(m_creature);
+            pTeslaCoil->SetInCombatWithZone();
+        }
 
         switch(urand(0, 2))
         {
@@ -150,6 +206,12 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_THADDIUS, IN_PROGRESS);
+    }
+
+    void StartEvent(Unit* pPlayer)
+    {
+        if(pPlayer)
+            m_uiPlayerGUID = pPlayer->GetGUID();
     }
 
     void CheckDistance()
@@ -200,6 +262,7 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
                 {
                     Unit *pVictim = Unit::GetUnit(*m_creature, (*itr)->getUnitGuid());  
                     if (pVictim && pVictim->GetTypeId() == TYPEID_PLAYER && pVictim->isAlive())
+                    {
                         if (pPlayer->IsWithinDistInMap(pVictim,5))
                         {
                             if (pPlayer->HasAura(SPELL_CHARGE_POSITIVE_DMGBUFF))
@@ -207,6 +270,7 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
                             else
                                 pPlayer->CastSpell(pVictim, SPELL_CHARGE_NEGATIVE_NEARDMG, true);
                         }
+                    }
                 }
             }
         }
@@ -222,7 +286,8 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
 
         if (m_bIsAggro && m_uiAggroTimer < uiDiff)
         {
-            m_creature->AI()->AttackStart(m_creature->getVictim());
+            if (Unit* pPlayer = Unit::GetUnit(*m_creature, m_uiPlayerGUID))
+                m_creature->AI()->AttackStart(pPlayer);
             m_bIsAggro = false;
         }else m_uiAggroTimer -= uiDiff;
  
@@ -258,7 +323,7 @@ struct MANGOS_DLL_DECL boss_thaddiusAI : public ScriptedAI
         if (m_uiBallLightingTimer < uiDiff)
         {
             CheckDistance();
-            m_uiBallLightingTimer = 1000;
+            m_uiBallLightingTimer = 2000;
         }else m_uiBallLightingTimer -= uiDiff;
 
         if (m_uiPolarityTimer < uiDiff)
@@ -294,12 +359,10 @@ struct MANGOS_DLL_DECL boss_stalaggAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;
-    bool m_bIsRegularMode;
-    bool m_bIsHPEvent;
-    bool m_bIsReset;
-    bool m_bIsEventNow;
-
-    uint64 m_uiTeslaGUID;
+    bool   m_bIsRegularMode;
+    bool   m_bIsHPEvent;
+    bool   m_bIsReset;
+    bool   m_bIsEventNow;
     uint32 m_uiResetTimer;
     uint32 m_uiEnrageTimer;
     uint32 m_uiOutOfRangeTimer;
@@ -308,7 +371,6 @@ struct MANGOS_DLL_DECL boss_stalaggAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiTeslaGUID         = 0;
         m_bIsEventNow         = true;
         m_bIsReset            = false;
         m_bIsHPEvent          = false;
@@ -317,14 +379,25 @@ struct MANGOS_DLL_DECL boss_stalaggAI : public ScriptedAI
         m_uiEnrageTimer       = urand(15000,25000);
         m_uiMagneticPullTimer = 30000;
         m_uiWarStompTimer     = 15000;
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_STALAGG, NOT_STARTED);
     }    
 
     void Aggro(Unit* pWho)
     {
+        m_creature->SetInCombatWithZone();
+
         if (Creature* pTeslaCoil = m_creature->SummonCreature(CREATURE_TESLA_COIL, m_creature->GetPositionX()+urand(1,4), m_creature->GetPositionY()+urand(1,4), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 1200000))
-            m_uiTeslaGUID = pTeslaCoil->GetGUID();
+        {
+            ((mob_teslacoilAI*)pTeslaCoil->AI())->SumonedBy(m_creature);
+            pTeslaCoil->SetInCombatWithZone();
+        }
 
         DoScriptText(SAY_FEUG_AGGRO, m_creature);
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_STALAGG, IN_PROGRESS);
     }
 
     void KilledUnit(Unit* pVictim)
@@ -335,6 +408,17 @@ struct MANGOS_DLL_DECL boss_stalaggAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_FEUG_DEATH, m_creature);
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_STALAGG, DONE);
+
+        if (m_pInstance && m_pInstance->GetData(TYPE_FEUGEN) == DONE)
+        {
+            if (Creature* pThaddius = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_THADDIUS))))
+            { 
+                ((boss_thaddiusAI*)pThaddius->AI())->StartEvent(pKiller);
+            }
+        }
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -427,12 +511,10 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;
-    bool m_bIsRegularMode;
-    bool m_bIsHPEvent;
-    bool m_bIsReset;
-    bool m_bIsEventNow;
-
-    uint64 m_uiTeslaGUID;
+    bool   m_bIsRegularMode;
+    bool   m_bIsHPEvent;
+    bool   m_bIsReset;
+    bool   m_bIsEventNow;
     uint32 m_uiOutOfRangeTimer;
     uint32 m_uiResetTimer;
     uint32 m_uiWarStompTimer;
@@ -440,7 +522,6 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiTeslaGUID       = 0;
         m_bIsEventNow       = true;
         m_bIsReset          = false;
         m_bIsHPEvent        = false;
@@ -448,14 +529,23 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
         m_uiResetTimer      = 10000;
         m_uiStaticFieldTimer= 3000;
         m_uiWarStompTimer   = 15000;
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_FEUGEN, NOT_STARTED);
     }    
 
     void Aggro(Unit* pWho)
     {
-        if (Creature* pTeslaCoil = m_creature->SummonCreature(CREATURE_TESLA_COIL, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 1200000))
-            m_uiTeslaGUID = pTeslaCoil->GetGUID();
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_FEUGEN, IN_PROGRESS);
 
-        m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_STATICFIELD : SPELL_STATICFIELD_H, false);
+        m_creature->SetInCombatWithZone();
+
+        if (Creature* pTeslaCoil = m_creature->SummonCreature(CREATURE_TESLA_COIL, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 1200000))
+        {
+            ((mob_teslacoilAI*)pTeslaCoil->AI())->SumonedBy(m_creature);
+            pTeslaCoil->SetInCombatWithZone();
+        }
 
         DoScriptText(SAY_STAL_AGGRO, m_creature);
     }
@@ -468,6 +558,17 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_STAL_DEATH, m_creature);
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_FEUGEN, DONE);
+
+        if (m_pInstance && m_pInstance->GetData(TYPE_STALAGG) == DONE)
+        {
+            if (Creature* pThaddius = ((Creature*)Unit::GetUnit(*m_creature, m_pInstance->GetData64(NPC_THADDIUS))))
+            { 
+                ((boss_thaddiusAI*)pThaddius->AI())->StartEvent(pKiller);
+            }
+        }
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -478,10 +579,6 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
         //HP event
         if (m_bIsReset)
             return;
-
-        if (Unit* pTeslaCoil = Unit::GetUnit(*m_creature, m_uiTeslaGUID))
-            if (m_creature->IsWithinDistInMap(pTeslaCoil, 15))
-                //aoe  dmg nature or whatever sounds like wipe
 
         if (m_bIsEventNow)
         {
@@ -528,7 +625,7 @@ struct MANGOS_DLL_DECL boss_feugenAI : public ScriptedAI
 
         if (m_uiStaticFieldTimer < uiDiff)
         {
-            //m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_STATICFIELD : SPELL_STATICFIELD_H, false);
+            m_creature->CastSpell(m_creature, m_bIsRegularMode ? SPELL_STATICFIELD : SPELL_STATICFIELD_H, false);
             m_uiStaticFieldTimer = 3000;
         }else m_uiStaticFieldTimer -= uiDiff;
 
@@ -564,5 +661,10 @@ void AddSC_boss_thaddius()
     NewScript = new Script;
     NewScript->Name = "boss_stalagg";
     NewScript->GetAI = &GetAI_boss_stalagg;
+    NewScript->RegisterSelf();
+    
+    NewScript = new Script;
+    NewScript->Name = "mob_teslacoil";
+    NewScript->GetAI = &GetAI_mob_teslacoil;
     NewScript->RegisterSelf();
 }

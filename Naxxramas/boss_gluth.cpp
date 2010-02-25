@@ -43,7 +43,7 @@ enum
     NPC_ZOMBIE_CHOW   = 16360
 };
 
-float m_fAddPos[9][3] = 
+double m_fAddPos[9][3] = 
 {
     {3269.590, -3161.287, 297.423},
     {3277.797, -3170.352, 297.423},
